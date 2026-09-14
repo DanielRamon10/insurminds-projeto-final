@@ -20,11 +20,11 @@ Licenciado sob a **licença MIT** (ver [LICENSE](LICENSE)).
 
 | Integrante | Frente |
 | --- | --- |
-| Daniel Ramon | *(a definir na Fase 0)* |
-| Paulo Henrique | *(a definir na Fase 0)* |
-| Nicole Paes | *(a definir na Fase 0)* |
-| Paulo Roberto | *(a definir na Fase 0)* |
-| Juliana Catarina | *(a definir na Fase 0)* — representante do grupo |
+| Daniel Ramon | Ingestão e OCR · Armazenamento e comparação · Documentação |
+| Paulo Henrique | Campos e cláusulas D&O (regras de negócio) |
+| Nicole Paes | Extração das cláusulas com IA Generativa |
+| Paulo Roberto | Interface, demonstração e apresentação |
+| Juliana Catarina | Representante do grupo |
 
 ---
 

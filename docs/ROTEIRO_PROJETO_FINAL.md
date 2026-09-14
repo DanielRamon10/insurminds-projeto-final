@@ -150,19 +150,41 @@ Maior que no Desafio 5, e com dois entregáveis que não são texto.
 
 ## Divisão sugerida
 
-Baseada no que cada um demonstrou no Desafio 5:
+Baseada no que cada um demonstrou no Desafio 5. **A Juliana está viajando**, então a
+frente E foi repartida entre os quatro — ela permanece como representante, responsável
+pelo envio, e reassume o que fizer sentido quando voltar.
 
 | Integrante | Frente | Por quê |
 | --- | --- | --- |
-| **Paulo Henrique** | F0.1, F0.2, B.1 | É o corretor. O dicionário de campos D&O é o `regras.yaml` deste projeto — a peça que deu ao Desafio 5 seu melhor argumento |
-| **Nicole Paes** | Frente B (B.2 a B.4) | Entregou os agentes e achou o bug do LLM que se disfarçava de fallback |
-| **Daniel Ramon** | Frente A + Frente C | Coleta e motor de regras foram suas no Desafio 5 |
-| **Paulo Roberto** | Frente D + **E.4 (vídeo)** | Fez a interface e a demonstração; é quem melhor sabe mostrar o sistema funcionando |
-| **Juliana Catarina** | Frente E (E.1, E.2, E.3, E.5) | Representante e responsável pela documentação; o relatório do Desafio 5 ficou preciso |
+| **Paulo Henrique** | F0.1, F0.2, B.1 + conteúdo de negócio do pitch | É o corretor. O dicionário de campos D&O é o `regras.yaml` deste projeto — a peça que deu ao Desafio 5 seu melhor argumento. E o problema do pitch é a dor que ele vive: horas de especialista comparando cláusulas |
+| **Nicole Paes** | Frente B (B.2 a B.4) | Entregou os agentes e achou o bug do LLM que se disfarçava de fallback correto |
+| **Daniel Ramon** | Frentes A e C + E.1, E.5 + consolidação do relatório | Coleta e motor de regras foram suas no Desafio 5, e o README e o empacotamento também |
+| **Paulo Roberto** | Frente D + **E.3 (pitch)** + **E.4 (vídeo)** | Fez a interface e a demonstração; é quem melhor sabe mostrar o sistema funcionando |
+| **Juliana Catarina** | Envio da entrega | Representante do grupo — a submissão sai obrigatoriamente do e-mail dela |
 
-> **Por que o vídeo vai para o Paulo Roberto e não para a Juliana:** ela já acumula
-> relatório, pitch e a submissão. Gravar exige a aplicação rodando na mão de quem a
-> construiu. Os dois combinam o roteiro; ele grava.
+### O relatório técnico sem a Juliana
+
+E.2 é a maior peça órfã. Em vez de um dono só, **cada frente escreve a seção que lhe
+corresponde** e o Daniel consolida:
+
+| Seção do relatório | Quem escreve |
+| --- | --- |
+| Arquitetura da solução | Daniel |
+| Tecnologias utilizadas | Daniel |
+| Descrição dos agentes | Nicole (frente B) e Paulo Roberto (frente D) |
+| Fluxo de processamento | Daniel |
+| Justificativa das decisões arquiteturais | quem tomou cada decisão, em uma frase |
+| Limitações conhecidas | todos — cada um sabe onde a própria frente é frágil |
+| Possibilidades de evolução futura | todos |
+
+> **Quando a Juliana voltar**, o caminho natural é devolver a ela a revisão e a formatação
+> final do relatório — foi o que ela fez bem no Desafio 5, e é trabalho de fim de ciclo.
+> Se voltar a tempo, o pitch também pode ir para ela, liberando o Paulo Roberto para
+> focar no vídeo. Reavaliar por volta de **27/09**.
+
+> **Por que o vídeo fica com o Paulo Roberto:** gravar exige a aplicação rodando na mão de
+> quem a construiu. Ele monta o pitch e grava; o Paulo Henrique dá o conteúdo do problema
+> de negócio, que é a primeira parte do deck.
 
 ---
 
@@ -172,7 +194,7 @@ Baseada no que cada um demonstrou no Desafio 5:
 | --- | --- |
 | **17/09** | Fase 0 fechada. Apólices baixadas, campos definidos, stack escolhida |
 | **22/09** | Frentes A e B funcionando: documento entra, campos saem estruturados |
-| **27/09** | Frente C: comparação entre duas apólices gerando saída |
+| **27/09** | Frente C: comparação entre duas apólices gerando saída. **Reavaliar o que devolver à Juliana** |
 | **30/09** | Frente D: interface demonstrável. **Congelamento de funcionalidades** |
 | **02/10** | Vídeo gravado e pitch pronto |
 | **04/10** | Relatório final e ZIP. Revisão do grupo |
@@ -193,3 +215,7 @@ vídeo é o entregável mais fácil de perder por falta de tempo.
    muito mais token que gerar uma mensagem de SMS — **testar o consumo cedo**.
 4. **Apólices difíceis.** Se os três documentos forem escaneados e ilegíveis, a frente A
    vira o gargalo. Por isso F0.2 vem antes de tudo.
+5. **Quatro pessoas em vez de cinco.** Com a Juliana viajando, a frente E está repartida
+   e o relatório não tem um dono único. O risco não é a escrita — é ninguém reparar que
+   uma seção ficou sem autor. A tabela de seções acima existe para isso; conferir na
+   revisão de 04/10, e **não contar com o retorno dela** para que a entrega aconteça.
