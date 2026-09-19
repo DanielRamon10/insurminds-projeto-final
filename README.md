@@ -1,45 +1,47 @@
-# Plataforma Inteligente para Análise e Comparação de Apólices D&O
+# Intelligent Platform for D&O Policy Analysis and Comparison
 
-**Projeto Final — Curso InsurMinds · Instituto de Inteligência Artificial Aplicada (I2A2)**
+**Final Project — InsurMinds Course · Instituto de Inteligência Artificial Aplicada (I2A2)**
 
-Protótipo (MVP) que lê apólices de seguro D&O (*Directors and Officers*) em PDF ou
-imagem, extrai automaticamente as informações relevantes — coberturas, exclusões,
-franquias, limites de responsabilidade —, armazena de forma estruturada e compara
-duas ou mais apólices, apontando as diferenças que importam para a decisão.
+*[Leia em português](README.pt-BR.md)*
 
-Comparar apólices D&O é hoje trabalho de especialista e leva horas: são documentos
-longos, em linguagem jurídica, cujas cláusulas equivalentes aparecem com nomes e em
-lugares diferentes em cada seguradora. A proposta é automatizar a maior parte dessa
-leitura sem esconder de onde cada informação veio.
+A prototype (MVP) that reads D&O (*Directors and Officers*) insurance policies from PDF
+or image, automatically extracts the relevant information — coverages, exclusions,
+deductibles, limits of liability —, stores it in structured form and compares two or more
+policies, surfacing the differences that actually matter for the decision.
 
-Licenciado sob a **licença MIT** (ver [LICENSE](LICENSE)).
+Comparing D&O policies is specialist work today and takes hours: the documents are long,
+written in legal language, and equivalent clauses show up under different names and in
+different places depending on the insurer. The goal is to automate most of that reading
+without hiding where each piece of information came from.
+
+Licensed under the **MIT license** (see [LICENSE](LICENSE)).
 
 ---
 
-## Grupo
+## Team
 
-| Integrante | Frente |
+| Member | Workstream |
 | --- | --- |
-| Daniel Ramon | Ingestão e OCR · Armazenamento e comparação · Documentação |
-| Paulo Henrique | Campos e cláusulas D&O (regras de negócio) |
-| Nicole Paes | Extração das cláusulas com IA Generativa |
-| Paulo Roberto | Interface, demonstração e apresentação |
-| Juliana Catarina | Representante do grupo |
+| Daniel Ramon | Ingestion and OCR · Storage and comparison · Documentation |
+| Paulo Henrique | D&O fields and clauses (business rules) |
+| Nicole Paes | Clause extraction with Generative AI |
+| Paulo Roberto | Interface, demo and presentation |
+| Juliana Catarina | Group representative |
 
 ---
 
-## Estado do projeto
+## Project status
 
-Em desenvolvimento. O roteiro com as frentes de trabalho e as tarefas está em
+In development. The roadmap covering the workstreams and their tasks lives in
 [`docs/`](docs/).
 
-**Prazo de entrega: 06/10/2026 às 23h59.**
+**Delivery deadline: October 6, 2026 at 11:59 PM.**
 
 ---
 
-## Instalação
+## Installation
 
-Requer **Python 3.10 ou superior**.
+Requires **Python 3.10 or newer**.
 
 ```bash
 git clone https://github.com/DanielRamon10/insurminds-projeto-final.git
@@ -52,47 +54,47 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-### Configuração da chave de API
+### API key configuration
 
 ```bash
 copy .env.example .env           # Windows
 # cp .env.example .env             # Linux / macOS
 ```
 
-Abra o `.env` e preencha a chave do provedor escolhido. O arquivo `.env` está no
-`.gitignore` e **nunca deve ser versionado** — nenhuma credencial aparece no
-código-fonte.
+Open `.env` and fill in the key for your chosen provider. The `.env` file is listed in
+`.gitignore` and **must never be committed** — no credential appears anywhere in the
+source code.
 
 ---
 
-## Execução
+## Running
 
-*A ser preenchido conforme as frentes forem entregando.*
-
----
-
-## Tecnologias utilizadas
-
-*A ser preenchido conforme as decisões da Fase 0 forem tomadas.*
+*To be filled in as the workstreams deliver.*
 
 ---
 
-## Estrutura de pastas
+## Tech stack
 
-| Caminho | Conteúdo |
+*To be filled in once the Phase 0 decisions are made.*
+
+---
+
+## Repository layout
+
+| Path | Contents |
 | --- | --- |
-| `app/clients/` | Integração com serviços externos (OCR, modelos de linguagem) |
-| `app/domain/` | Extração de cláusulas, estruturação e comparação entre apólices |
-| `app/agents/` | Agentes especializados e orquestrador |
-| `data/` | Apólices de exemplo e dados estruturados |
-| `docs/` | Roteiro do projeto e relatório técnico |
-| `scripts/` | Demonstração por linha de comando e utilitários |
-| `tests/` | Testes automatizados |
-| `Projeto_Final_Artefatos/` | Pitch deck, vídeo e demais artefatos exigidos na entrega |
+| `app/clients/` | Integration with external services (OCR, language models) |
+| `app/domain/` | Clause extraction, structuring and policy-to-policy comparison |
+| `app/agents/` | Specialised agents and the orchestrator |
+| `data/` | Sample policies and structured data |
+| `docs/` | Project roadmap and technical report |
+| `scripts/` | Command-line demo and utilities |
+| `tests/` | Automated tests |
+| `Projeto_Final_Artefatos/` | Pitch deck, video and the other artifacts required for delivery |
 
 ---
 
-## Observações
+## Notes
 
-Nenhuma integração com sistemas reais de seguradoras. As apólices utilizadas são
-documentos públicos, e suas fontes estão citadas no relatório técnico.
+There is no integration with real insurer systems. The policies used are public
+documents, and their sources are cited in the technical report.

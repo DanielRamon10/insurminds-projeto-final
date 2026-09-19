@@ -1,221 +1,225 @@
-# Roteiro do Projeto Final — Plataforma de Análise e Comparação de Apólices D&O
+# Final Project Roadmap — D&O Policy Analysis and Comparison Platform
 
-**Grupo Insurminds · Curso InsurMinds / I2A2**
-**Prazo: 06/10/2026 às 23h59** — este documento foi escrito em 14/09/2026, restam **22 dias**.
-
----
-
-## O que muda em relação ao Desafio 5
-
-Três coisas novas, e as três pesam:
-
-| Novidade | Por que exige atenção |
-| --- | --- |
-| **Pitch deck** (`InsurMinds_Projeto_Final.pptx`) | Nome de arquivo obrigatório e literal. Não é slide de apoio: é entregável avaliado |
-| **Vídeo de até 5 minutos** (`InsurMinds_Projeto_Final.mp4`) | Precisa de produto funcionando para gravar. Se ficar para o fim, não existe |
-| **Documento de entrada não estruturado** | No Desafio 5 a API devolvia números prontos. Aqui a entrada é PDF jurídico de dezenas de páginas |
-
-E uma mudança de natureza: **esta é a avaliação final do curso**. Sem ela, o grupo não é
-aprovado e ninguém recebe o certificado do módulo avançado.
+**Insurminds group · InsurMinds Course / I2A2**
+**Deadline: October 6, 2026 at 11:59 PM** — this document was written on September 14, 2026; **22 days remain**.
 
 ---
 
-## Fase 0 — Decisões antes de escrever código
+## What changes relative to Challenge 5
 
-Nada disso é técnico o bastante para uma pessoa decidir sozinha. São quatro decisões, e
-todas travam trabalho de mais de uma frente.
+Three new things, and all three carry weight:
 
-### F0.1 — Quais campos comparar
+| What's new | Why it needs attention |
+| --- | --- |
+| **Pitch deck** (`InsurMinds_Projeto_Final.pptx`) | Mandatory, literal filename. This is not a supporting slide: it is a graded deliverable |
+| **Video, 5 minutes maximum** (`InsurMinds_Projeto_Final.mp4`) | Needs a working product to record. Leave it to the end and it won't exist |
+| **Unstructured input document** | In Challenge 5 the API handed back ready-made numbers. Here the input is a legal PDF dozens of pages long |
 
-**A decisão mais importante do projeto.** Uma apólice D&O tem dezenas de cláusulas; o
-sistema não precisa extrair todas, precisa extrair as que mudam uma decisão.
-
-Candidatos para a conversa: limite máximo de indenização, franquia (retenção), vigência,
-âmbito geográfico, definição de segurado, exclusões principais, cobertura para custos de
-defesa, retroatividade, prazo complementar.
-
-> **Quem decide:** Paulo Henrique lidera — é corretor, e essa é exatamente a leitura que
-> ele faz no trabalho. O grupo confirma o escopo.
-> **Meta:** 8 a 12 campos. Menos que isso não demonstra comparação; mais vira extração
-> rasa em todos.
-
-### F0.2 — Onde conseguir as apólices
-
-O enunciado sugere documentos públicos: modelos publicados por seguradoras, material da
-SUSEP, cláusulas padrão de mercado. **Precisamos de pelo menos três apólices reais de
-seguradoras diferentes** — comparar duas versões do mesmo modelo não demonstra nada.
-
-> **Quem decide:** Paulo Henrique indica onde procurar; qualquer um baixa.
-> **Atenção:** a fonte de cada documento tem de ser citada no relatório.
-
-### F0.3 — Como ler o documento
-
-Três caminhos, e a escolha muda a frente A inteira:
-
-1. **PDF nativo** (texto embutido) — `pypdf` resolve, é rápido e não custa nada.
-2. **PDF escaneado** — exige OCR (Tesseract local, ou serviço de nuvem).
-3. **LLM multimodal** — manda a página como imagem e deixa o modelo ler.
-
-> **Recomendação:** tentar o caminho 1 primeiro e cair no OCR só quando a página não tiver
-> texto. A maioria dos modelos públicos de apólice é PDF nativo. Mas **o enunciado exige
-> aceitar imagem**, então o caminho 2 precisa existir nem que seja para um documento.
-
-### F0.4 — Onde guardar o que foi extraído
-
-O enunciado pede "armazenamento estruturado" e cita SQL ou NoSQL. Para um MVP, SQLite
-resolve e não exige subir serviço nenhum.
-
-> **Recomendação:** SQLite. A pergunta a responder no relatório não é "qual banco", é
-> "por que este banco basta para o problema".
+And a change in kind: **this is the course's final assessment**. Without it the group does
+not pass and nobody receives the advanced-module certificate.
 
 ---
 
-## As cinco frentes
+## Phase 0 — Decisions to make before writing code
 
-### Frente A — Ingestão e extração de texto
+None of this is technical enough for one person to decide alone. There are four
+decisions, and every one of them blocks work in more than one workstream.
 
-Transformar o arquivo que chega em texto confiável, sabendo de qual página veio cada
-trecho — sem isso a rastreabilidade da frente B morre.
+### F0.1 — Which fields to compare
 
-| Tarefa | O que entrega |
+**The most important decision in the project.** A D&O policy has dozens of clauses; the
+system doesn't need to extract all of them, it needs to extract the ones that change a
+decision.
+
+Candidates for the discussion: maximum indemnity limit, deductible (retention), policy
+period, geographic scope, definition of the insured, main exclusions, defence-costs
+coverage, retroactive date, extended reporting period.
+
+> **Who decides:** Paulo Henrique leads — he's a broker, and this is exactly the reading
+> he does at work. The group confirms the scope.
+> **Target:** 8 to 12 fields. Fewer than that doesn't demonstrate comparison; more turns
+> into shallow extraction across the board.
+
+### F0.2 — Where to get the policies
+
+The assignment suggests public documents: templates published by insurers, SUSEP
+material, standard market clauses. **We need at least three real policies from three
+different insurers** — comparing two versions of the same template demonstrates nothing.
+
+> **Who decides:** Paulo Henrique points at where to look; anyone can download them.
+> **Note:** the source of each document has to be cited in the report.
+
+### F0.3 — How to read the document
+
+Three routes, and the choice reshapes all of workstream A:
+
+1. **Native PDF** (embedded text) — `pypdf` handles it, it's fast and it costs nothing.
+2. **Scanned PDF** — requires OCR (Tesseract locally, or a cloud service).
+3. **Multimodal LLM** — send the page as an image and let the model read it.
+
+> **Recommendation:** try route 1 first and fall back to OCR only when a page has no
+> text. Most public policy templates are native PDFs. But **the assignment requires
+> accepting images**, so route 2 has to exist even if only for one document.
+
+### F0.4 — Where to store what was extracted
+
+The assignment asks for "structured storage" and mentions SQL or NoSQL. For an MVP,
+SQLite handles it and requires standing up no service at all.
+
+> **Recommendation:** SQLite. The question to answer in the report isn't "which database",
+> it's "why this database is enough for this problem".
+
+---
+
+## The five workstreams
+
+### Workstream A — Ingestion and text extraction
+
+Turn the incoming file into reliable text, knowing which page each passage came from —
+without that, workstream B's traceability dies.
+
+| Task | What it delivers |
 | --- | --- |
-| **A.1** | Recepção do documento: aceita PDF e imagem, rejeita o resto com mensagem clara |
-| **A.2** | Extração de PDF nativo, preservando número de página |
-| **A.3** | OCR para páginas sem texto embutido |
-| **A.4** | Tolerância a falha: documento corrompido ou página ilegível não derruba o lote |
+| **A.1** | Document intake: accepts PDF and image, rejects everything else with a clear message |
+| **A.2** | Native-PDF extraction, preserving the page number |
+| **A.3** | OCR for pages with no embedded text |
+| **A.4** | Fault tolerance: a corrupt document or an unreadable page doesn't take down the batch |
 
-**Pronto quando:** as três apólices escolhidas em F0.2 viram texto, e cada trecho sabe
-dizer de que página saiu.
+**Done when:** the three policies chosen in F0.2 become text, and every passage can say
+which page it came from.
 
-### Frente B — Extração das cláusulas (o coração do projeto)
+### Workstream B — Clause extraction (the heart of the project)
 
-É aqui que a IA Generativa entra de verdade, e é o que o enunciado avalia como "correta
-utilização de IA Generativa".
+This is where Generative AI genuinely comes in, and it's what the assignment grades as
+"correct use of Generative AI".
 
-| Tarefa | O que entrega |
+| Task | What it delivers |
 | --- | --- |
-| **B.1** | Dicionário dos campos de F0.1: nome, o que significa, como costuma aparecer no texto |
-| **B.2** | Agente extrator com LLM: recebe o texto, devolve os campos estruturados |
-| **B.3** | **Rastreabilidade**: cada campo extraído guarda a página e o trecho de origem |
-| **B.4** | Validação: campo ausente é `null` explícito, nunca inventado |
+| **B.1** | Dictionary of the F0.1 fields: name, what it means, how it usually appears in the text |
+| **B.2** | LLM extraction agent: takes the text, returns the structured fields |
+| **B.3** | **Traceability**: every extracted field records its source page and passage |
+| **B.4** | Validation: a missing field is an explicit `null`, never invented |
 
-**Pronto quando:** rodando sobre as três apólices, sai uma estrutura preenchida e é
-possível apontar, para qualquer campo, onde ele estava no documento.
+**Done when:** running over the three policies produces a filled-in structure, and for
+any field it's possible to point at where it was in the document.
 
-> **A lição do Desafio 5 aplicada aqui:** lá, o guardrail impedia o modelo de citar número
-> que a previsão não tinha. Aqui o risco é maior — um limite de indenização inventado é
-> pior que uma mensagem errada. **B.3 não é enfeite: é o que separa o projeto de um
-> chute bem formatado.**
+> **The lesson from Challenge 5, applied here:** there, the guardrail stopped the model
+> from quoting a number the forecast didn't contain. Here the stakes are higher — an
+> invented indemnity limit is worse than a wrong message. **B.3 is not decoration: it's
+> what separates this project from a well-formatted guess.**
 
-### Frente C — Armazenamento e comparação
+### Workstream C — Storage and comparison
 
-| Tarefa | O que entrega |
+| Task | What it delivers |
 | --- | --- |
-| **C.1** | Esquema do banco e gravação das apólices processadas |
-| **C.2** | Motor de comparação: campo a campo, entre duas ou mais apólices |
-| **C.3** | Classificação da diferença: igual, diferente, ausente numa delas |
-| **C.4** | Relatório comparativo em texto, gerado por LLM a partir das diferenças |
+| **C.1** | Database schema and persistence of processed policies |
+| **C.2** | Comparison engine: field by field, across two or more policies |
+| **C.3** | Difference classification: identical, different, missing in one of them |
+| **C.4** | Comparative report in prose, generated by an LLM from the differences |
 
-**Pronto quando:** dadas duas apólices, sai uma tabela de diferenças e um resumo que
-explica o que elas significam para quem contrata.
+**Done when:** given two policies, out comes a table of differences plus a summary
+explaining what they mean for the buyer.
 
-> **Cuidado com a fronteira:** C.2 decide *o que* é diferente (determinístico, testável);
-> C.4 explica *por que importa* (LLM). Misturar os dois foi o erro que custou um PR de
-> consolidação no Desafio 5.
+> **Mind the boundary:** C.2 decides *what* is different (deterministic, testable); C.4
+> explains *why it matters* (LLM). Mixing the two was the mistake that cost us a
+> consolidation PR in Challenge 5.
 
-### Frente D — Interface e demonstração
+### Workstream D — Interface and demo
 
-| Tarefa | O que entrega |
+| Task | What it delivers |
 | --- | --- |
-| **D.1** | Upload de apólices pela interface |
-| **D.2** | Visualização lado a lado das diferenças |
-| **D.3** | Rastreabilidade na tela: clicar num campo e ver de onde ele veio |
-| **D.4** | Demonstração por linha de comando, para o vídeo não depender da interface |
+| **D.1** | Policy upload through the interface |
+| **D.2** | Side-by-side view of the differences |
+| **D.3** | Traceability on screen: click a field and see where it came from |
+| **D.4** | Command-line demo, so the video doesn't depend on the interface |
 
-**Pronto quando:** dá para subir duas apólices e ver a comparação sem tocar no terminal.
+**Done when:** you can upload two policies and see the comparison without touching a
+terminal.
 
-### Frente E — Documentação, pitch e vídeo
+### Workstream E — Documentation, pitch and video
 
-Maior que no Desafio 5, e com dois entregáveis que não são texto.
+Bigger than in Challenge 5, and with two deliverables that aren't text.
 
-| Tarefa | O que entrega |
+| Task | What it delivers |
 | --- | --- |
-| **E.1** | README com os **seis** itens obrigatórios do enunciado |
-| **E.2** | Relatório técnico com **sete** seções (duas novas: limitações conhecidas e evolução futura) |
+| **E.1** | README with the **six** items the assignment requires |
+| **E.2** | Technical report with **seven** sections (two new: known limitations and future work) |
 | **E.3** | `InsurMinds_Projeto_Final.pptx` — pitch deck |
-| **E.4** | `InsurMinds_Projeto_Final.mp4` — vídeo de até 5 minutos |
-| **E.5** | ZIP do código e organização da pasta `Projeto_Final_Artefatos` |
+| **E.4** | `InsurMinds_Projeto_Final.mp4` — video, 5 minutes maximum |
+| **E.5** | Code ZIP and organisation of the `Projeto_Final_Artefatos` folder |
 
 ---
 
-## Divisão sugerida
+## Suggested split
 
-Baseada no que cada um demonstrou no Desafio 5. **A Juliana está viajando**, então a
-frente E foi repartida entre os quatro — ela permanece como representante, responsável
-pelo envio, e reassume o que fizer sentido quando voltar.
+Based on what each person demonstrated in Challenge 5. **Juliana is travelling**, so
+workstream E has been divided among the four of us — she stays on as the group
+representative, responsible for submission, and picks back up whatever makes sense when
+she returns.
 
-| Integrante | Frente | Por quê |
+| Member | Workstream | Why |
 | --- | --- | --- |
-| **Paulo Henrique** | F0.1, F0.2, B.1 + conteúdo de negócio do pitch | É o corretor. O dicionário de campos D&O é o `regras.yaml` deste projeto — a peça que deu ao Desafio 5 seu melhor argumento. E o problema do pitch é a dor que ele vive: horas de especialista comparando cláusulas |
-| **Nicole Paes** | Frente B (B.2 a B.4) | Entregou os agentes e achou o bug do LLM que se disfarçava de fallback correto |
-| **Daniel Ramon** | Frentes A e C + E.1, E.5 + consolidação do relatório | Coleta e motor de regras foram suas no Desafio 5, e o README e o empacotamento também |
-| **Paulo Roberto** | Frente D + **E.3 (pitch)** + **E.4 (vídeo)** | Fez a interface e a demonstração; é quem melhor sabe mostrar o sistema funcionando |
-| **Juliana Catarina** | Envio da entrega | Representante do grupo — a submissão sai obrigatoriamente do e-mail dela |
+| **Paulo Henrique** | F0.1, F0.2, B.1 + the business content of the pitch | He's the broker. The D&O field dictionary is this project's `regras.yaml` — the piece that gave Challenge 5 its strongest argument. And the pitch's problem statement is the pain he lives: specialist hours spent comparing clauses |
+| **Nicole Paes** | Workstream B (B.2 to B.4) | She delivered the agents and found the LLM bug that was disguising itself as a correct fallback |
+| **Daniel Ramon** | Workstreams A and C + E.1, E.5 + consolidating the report | Collection and the rules engine were his in Challenge 5, and so were the README and the packaging |
+| **Paulo Roberto** | Workstream D + **E.3 (pitch)** + **E.4 (video)** | He built the interface and the demo; he's the one who best knows how to show the system working |
+| **Juliana Catarina** | Submitting the delivery | Group representative — the submission must go out from her email |
 
-### O relatório técnico sem a Juliana
+### The technical report without Juliana
 
-E.2 é a maior peça órfã. Em vez de um dono só, **cada frente escreve a seção que lhe
-corresponde** e o Daniel consolida:
+E.2 is the largest orphaned piece. Instead of a single owner, **each workstream writes
+the section that corresponds to it** and Daniel consolidates:
 
-| Seção do relatório | Quem escreve |
+| Report section | Who writes it |
 | --- | --- |
-| Arquitetura da solução | Daniel |
-| Tecnologias utilizadas | Daniel |
-| Descrição dos agentes | Nicole (frente B) e Paulo Roberto (frente D) |
-| Fluxo de processamento | Daniel |
-| Justificativa das decisões arquiteturais | quem tomou cada decisão, em uma frase |
-| Limitações conhecidas | todos — cada um sabe onde a própria frente é frágil |
-| Possibilidades de evolução futura | todos |
+| Solution architecture | Daniel |
+| Tech stack | Daniel |
+| Description of the agents | Nicole (workstream B) and Paulo Roberto (workstream D) |
+| Processing flow | Daniel |
+| Rationale for the architectural decisions | whoever made each decision, in one sentence |
+| Known limitations | everyone — each of us knows where our own workstream is fragile |
+| Future work | everyone |
 
-> **Quando a Juliana voltar**, o caminho natural é devolver a ela a revisão e a formatação
-> final do relatório — foi o que ela fez bem no Desafio 5, e é trabalho de fim de ciclo.
-> Se voltar a tempo, o pitch também pode ir para ela, liberando o Paulo Roberto para
-> focar no vídeo. Reavaliar por volta de **27/09**.
+> **When Juliana returns**, the natural move is to hand her back the review and final
+> formatting of the report — that's what she did well in Challenge 5, and it's
+> end-of-cycle work. If she's back in time, the pitch can go to her as well, freeing
+> Paulo Roberto to focus on the video. Reassess around **September 27**.
 
-> **Por que o vídeo fica com o Paulo Roberto:** gravar exige a aplicação rodando na mão de
-> quem a construiu. Ele monta o pitch e grava; o Paulo Henrique dá o conteúdo do problema
-> de negócio, que é a primeira parte do deck.
+> **Why the video goes to Paulo Roberto:** recording requires the application running in
+> the hands of whoever built it. He assembles the pitch and records; Paulo Henrique
+> supplies the business-problem content, which is the first part of the deck.
 
 ---
 
-## Calendário sugerido
+## Suggested calendar
 
-| Até | O que precisa estar pronto |
+| By | What has to be ready |
 | --- | --- |
-| **17/09** | Fase 0 fechada. Apólices baixadas, campos definidos, stack escolhida |
-| **22/09** | Frentes A e B funcionando: documento entra, campos saem estruturados |
-| **27/09** | Frente C: comparação entre duas apólices gerando saída. **Reavaliar o que devolver à Juliana** |
-| **30/09** | Frente D: interface demonstrável. **Congelamento de funcionalidades** |
-| **02/10** | Vídeo gravado e pitch pronto |
-| **04/10** | Relatório final e ZIP. Revisão do grupo |
-| **06/10** | Entrega — **não deixar para este dia** |
+| **Sep 17** | Phase 0 closed. Policies downloaded, fields defined, stack chosen |
+| **Sep 22** | Workstreams A and B working: a document goes in, structured fields come out |
+| **Sep 27** | Workstream C: comparison between two policies producing output. **Reassess what to hand back to Juliana** |
+| **Sep 30** | Workstream D: demonstrable interface. **Feature freeze** |
+| **Oct 2** | Video recorded and pitch ready |
+| **Oct 4** | Final report and ZIP. Group review |
+| **Oct 6** | Delivery — **do not leave it for this day** |
 
-O congelamento em 30/09 não é burocracia: **sem produto estável não há vídeo**, e o
-vídeo é o entregável mais fácil de perder por falta de tempo.
+The September 30 freeze isn't bureaucracy: **without a stable product there is no video**,
+and the video is the deliverable easiest to lose for lack of time.
 
 ---
 
-## Riscos conhecidos
+## Known risks
 
-1. **O vídeo ficar para o fim.** É o item mais provável de atrasar. Por isso tem dono e
-   data próprios.
-2. **Extração alucinada.** Um limite de indenização inventado passa despercebido numa
-   demonstração e destrói a credibilidade numa pergunta. B.3 e B.4 existem contra isso.
-3. **Cota do LLM.** Já aconteceu no Desafio 4 e no 5. Processar uma apólice inteira gasta
-   muito mais token que gerar uma mensagem de SMS — **testar o consumo cedo**.
-4. **Apólices difíceis.** Se os três documentos forem escaneados e ilegíveis, a frente A
-   vira o gargalo. Por isso F0.2 vem antes de tudo.
-5. **Quatro pessoas em vez de cinco.** Com a Juliana viajando, a frente E está repartida
-   e o relatório não tem um dono único. O risco não é a escrita — é ninguém reparar que
-   uma seção ficou sem autor. A tabela de seções acima existe para isso; conferir na
-   revisão de 04/10, e **não contar com o retorno dela** para que a entrega aconteça.
+1. **The video slipping to the end.** It's the item most likely to be late. That's why it
+   has its own owner and its own date.
+2. **Hallucinated extraction.** An invented indemnity limit slides past unnoticed in a
+   demo and destroys credibility the moment someone asks about it. B.3 and B.4 exist
+   against exactly this.
+3. **LLM quota.** It already bit us in Challenges 4 and 5. Processing a whole policy burns
+   far more tokens than generating an SMS — **test consumption early**.
+4. **Difficult policies.** If all three documents turn out to be scanned and illegible,
+   workstream A becomes the bottleneck. That's why F0.2 comes before everything else.
+5. **Four people instead of five.** With Juliana travelling, workstream E is split and the
+   report has no single owner. The risk isn't the writing — it's nobody noticing that a
+   section ended up without an author. The section table above exists for that; check it
+   at the October 4 review, and **don't count on her return** for the delivery to happen.

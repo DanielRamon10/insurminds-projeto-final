@@ -1,17 +1,16 @@
-# Artefatos do Projeto Final
+# Final Project Artifacts
 
-Pasta exigida pelo enunciado. Aqui ficam a apresentação, o vídeo e os demais
-artefatos auxiliares gerados pelo projeto.
+Folder required by the assignment. This is where the presentation, the video and the
+other supporting artifacts produced by the project live.
 
-## O que precisa estar aqui até 06/10/2026
+## What must be here by October 6, 2026
 
-| Arquivo | Exigência |
+| File | Requirement |
 | --- | --- |
-| `InsurMinds_Projeto_Final.pptx` | Pitch deck — o nome do arquivo é obrigatório e literal |
-| `InsurMinds_Projeto_Final.mp4` | Vídeo de **até 5 minutos** — nome obrigatório e literal |
+| `InsurMinds_Projeto_Final.pptx` | Pitch deck — the filename is mandatory and literal |
+| `InsurMinds_Projeto_Final.mp4` | Video, **5 minutes maximum** — mandatory, literal filename |
 
-O vídeo precisa demonstrar quatro coisas: o problema abordado, a arquitetura da
-solução, o funcionamento da aplicação e os principais resultados obtidos.
+The video has to demonstrate four things: the problem being addressed, the architecture
+of the solution, the application in action, and the main results obtained.
 
-Artefatos auxiliares (diagramas, apólices de exemplo anotadas, capturas de tela)
-também moram aqui.
+Supporting artifacts (diagrams, annotated sample policies, screenshots) belong here too.
