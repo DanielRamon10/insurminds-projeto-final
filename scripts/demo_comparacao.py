@@ -1,8 +1,8 @@
 """Demonstração das frentes C.1 a C.3: armazenamento e comparação.
 
-Roda com extrações fabricadas à mão, porque a frente B ainda está sendo escrita.
-Serve a dois propósitos: mostrar o motor de comparação funcionando e deixar
-visível o contrato que a extração precisa produzir.
+Roda com as extrações de exemplo de `app/domain/exemplos.py`, porque a frente B
+ainda está sendo escrita. Serve a dois propósitos: mostrar o motor de comparação
+funcionando e deixar visível o contrato que a extração precisa produzir.
 
     python -m scripts.demo_comparacao
 """
@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from app.domain.armazenamento import Banco  # noqa: E402
 from app.domain.campos import carregar_campos  # noqa: E402
 from app.domain.comparacao import Veredito, comparar  # noqa: E402
-from app.schemas import ApoliceExtraida, CampoExtraido  # noqa: E402
+from app.domain.exemplos import carregar_exemplos  # noqa: E402
 
 SIMBOLO = {
     Veredito.AUSENTE_EM_ALGUMA: "[!]",
@@ -30,62 +30,16 @@ SIMBOLO = {
     Veredito.AUSENTE_EM_TODAS: "[ ]",
 }
 
-# Extrações fabricadas — é o formato que a frente B vai devolver.
-CHUBB = ApoliceExtraida(
-    documento="chubb_do_capital_fechado.pdf",
-    seguradora="Chubb",
-    modelo_usado="(exemplo, sem LLM)",
-    campos=[
-        CampoExtraido(campo_id="limite_maximo_indenizacao", valor="R$ 10.000.000,00",
-                      trecho_origem="Limite Maximo de Indenizacao de R$ 10.000.000,00",
-                      pagina=4, paginas_possiveis=[4]),
-        CampoExtraido(campo_id="franquia", valor="R$ 50.000,00",
-                      trecho_origem="franquia de R$ 50.000,00 por reclamacao",
-                      pagina=12, paginas_possiveis=[12]),
-        CampoExtraido(campo_id="prazo_complementar", valor="90 dias",
-                      trecho_origem="prazo complementar de 90 dias", pagina=18),
-        CampoExtraido(campo_id="sublimites", valor="R$ 1.000.000,00 para custos de defesa",
-                      trecho_origem="sublimite de R$ 1.000.000,00", pagina=9),
-        CampoExtraido(campo_id="exclusao_ambiental",
-                      valor="Estao excluidos danos decorrentes de poluicao",
-                      trecho_origem="excluidos os danos decorrentes de poluicao", pagina=31),
-        CampoExtraido(campo_id="cobertura_investigacoes",
-                      valor="Cobre custos de investigacao antes da acao judicial",
-                      trecho_origem="custos de investigacao", pagina=22),
-    ],
-)
-
-AIG = ApoliceExtraida(
-    documento="aig_do.pdf",
-    seguradora="AIG",
-    modelo_usado="(exemplo, sem LLM)",
-    campos=[
-        # mesmo valor do LMI, escrito de outro jeito — não pode virar "diferente"
-        CampoExtraido(campo_id="limite_maximo_indenizacao", valor="R$ 10 milhões",
-                      trecho_origem="Limite de Garantia de R$ 10 milhoes",
-                      pagina=6, paginas_possiveis=[6]),
-        CampoExtraido(campo_id="franquia", valor="R$ 80.000,00",
-                      trecho_origem="retencao de R$ 80.000,00", pagina=7),
-        # mesmo prazo em outra unidade
-        CampoExtraido(campo_id="prazo_complementar", valor="3 meses",
-                      trecho_origem="prazo adicional de 3 meses", pagina=15),
-        CampoExtraido(campo_id="exclusao_ambiental",
-                      valor="Sem cobertura para contaminacao do meio ambiente",
-                      trecho_origem="contaminacao do meio ambiente", pagina=28),
-        # sublimites e cobertura de investigações: ausentes de propósito
-    ],
-)
-
-
 def main() -> int:
     dicionario = carregar_campos()
     print(f"dicionario: {len(dicionario)} campos, definidos por {dicionario.definido_por}\n")
 
     # C.1 — guarda e recupera
+    exemplos = carregar_exemplos()
     banco = Banco(":memory:")
-    for a in (CHUBB, AIG):
+    for a in exemplos:
         banco.salvar(a)
-    apolices = banco.carregar_varias([CHUBB.documento, AIG.documento])
+    apolices = banco.carregar_varias([a.documento for a in exemplos])
     print("guardadas e recuperadas do banco:")
     for linha in banco.listar():
         print(f"  {linha['seguradora']:8} {linha['encontrados']}/{linha['total_campos']} campos")
