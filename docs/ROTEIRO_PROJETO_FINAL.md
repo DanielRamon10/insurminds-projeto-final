@@ -1,6 +1,7 @@
 # Final Project Roadmap — D&O Policy Analysis and Comparison Platform
 
 **Insurminds group · InsurMinds Course / I2A2**
+*[Leia em português](ROTEIRO_PROJETO_FINAL.pt-BR.md)*
 **Deadline: October 6, 2026 at 11:59 PM** — this document was written on September 14, 2026; **22 days remain**.
 
 ---

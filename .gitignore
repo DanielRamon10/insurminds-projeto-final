@@ -13,3 +13,4 @@ data/saida/
 *.log
 .DS_Store
 Thumbs.db
+docs/*.html
