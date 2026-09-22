@@ -67,6 +67,13 @@ def caminho_tesseract() -> str | None:
 # Modelos de linguagem
 # ---------------------------------------------------------------------------
 
+#: Provedores em ordem de preferência. A ordem importa: extrair cláusula jurídica
+#: é tarefa em que a qualidade do modelo pesa muito — um modelo fraco inventa
+#: limite de indenização —, então a cascata cai por qualidade, não por acaso.
+#:
+#: `base_url` presente significa API compatível com a da OpenAI: o mesmo pacote
+#: `langchain-openai` serve, só mudando o endereço. É o caso do OpenRouter e do
+#: Groq, que por isso custam uma integração só em vez de duas.
 PROVEDORES: dict[str, dict[str, object]] = {
     "google": {
         "rotulo": "Google (Gemini)",
@@ -80,6 +87,7 @@ PROVEDORES: dict[str, dict[str, object]] = {
             "gemini-3.1-flash-lite",
         ],
         "pacote": "langchain-google-genai",
+        "base_url": None,
     },
     "anthropic": {
         "rotulo": "Anthropic (Claude)",
@@ -87,6 +95,7 @@ PROVEDORES: dict[str, dict[str, object]] = {
         "modelo_padrao": "claude-sonnet-5",
         "modelos": ["claude-sonnet-5", "claude-haiku-4-5"],
         "pacote": "langchain-anthropic",
+        "base_url": None,
     },
     "openai": {
         "rotulo": "OpenAI (GPT)",
@@ -94,8 +103,34 @@ PROVEDORES: dict[str, dict[str, object]] = {
         "modelo_padrao": "gpt-4.1",
         "modelos": ["gpt-4.1", "gpt-4.1-mini"],
         "pacote": "langchain-openai",
+        "base_url": None,
+    },
+    "groq": {
+        "rotulo": "Groq",
+        "env_key": "GROQ_API_KEY",
+        "modelo_padrao": "openai/gpt-oss-120b",
+        "modelos": ["openai/gpt-oss-120b"],
+        "pacote": "langchain-openai",
+        "base_url": "https://api.groq.com/openai/v1",
+    },
+    "openrouter": {
+        "rotulo": "OpenRouter",
+        "env_key": "OPENROUTER_API_KEY",
+        "modelo_padrao": "qwen/qwen3.8-27b:free",
+        "modelos": ["qwen/qwen3.8-27b:free"],
+        "pacote": "langchain-openai",
+        "base_url": "https://openrouter.ai/api/v1",
     },
 }
+
+#: Ordem em que a cascata tenta os provedores quando um esgota a cota. Só entram
+#: os que tiverem chave configurada — a lista é uma preferência, não uma exigência.
+ORDEM_CASCATA = ["google", "groq", "openrouter", "anthropic", "openai"]
+
+
+def provedores_disponiveis() -> list[str]:
+    """Provedores com chave configurada, na ordem de preferência da cascata."""
+    return [p for p in ORDEM_CASCATA if obter_api_key(p)]
 
 
 @dataclass(frozen=True)
