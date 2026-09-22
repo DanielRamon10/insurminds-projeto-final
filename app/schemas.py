@@ -149,6 +149,93 @@ class DocumentoExtraido(BaseModel):
         return len(self.paginas_de(trecho)) > 3
 
 
+# ---------------------------------------------------------------------------
+# Fronteira entre a extração (frente B) e a comparação (frente C)
+#
+# A frente B lê o documento e devolve `ApoliceExtraida`. A frente C recebe duas ou
+# mais e aponta as diferenças. Nenhuma das duas precisa saber como a outra
+# funciona, mas as duas precisam concordar com o que está escrito abaixo.
+# ---------------------------------------------------------------------------
+
+
+class CampoExtraido(BaseModel):
+    """O que a plataforma achou de um campo do dicionário, numa apólice.
+
+    Os três atributos de origem (`trecho_origem`, `pagina`, `paginas_possiveis`)
+    são o que torna a extração auditável. Sem eles não há como distinguir um valor
+    lido de um valor inventado, que é justamente o risco de usar um modelo de
+    linguagem sobre documento jurídico.
+    """
+
+    campo_id: str = Field(description="o mesmo `id` usado em data/campos_do.yaml")
+    valor: str | None = Field(
+        default=None,
+        description="o que foi encontrado; None quando a apólice não trata do assunto",
+    )
+    trecho_origem: str | None = Field(
+        default=None, description="o texto da apólice de onde o valor saiu"
+    )
+    pagina: int | None = Field(
+        default=None, description="página do trecho, quando é possível localizá-lo"
+    )
+    paginas_possiveis: list[int] = Field(
+        default_factory=list,
+        description="todas as páginas onde o trecho ocorre; mais de três indica boilerplate",
+    )
+    observacao: str | None = Field(
+        default=None, description="ressalva do extrator, quando houver"
+    )
+
+    @property
+    def encontrado(self) -> bool:
+        return self.valor is not None and self.valor.strip() != ""
+
+    @property
+    def rastreavel(self) -> bool:
+        """Se dá para apontar de onde este valor veio.
+
+        Um campo encontrado mas não rastreável não é erro — pode ser um resumo de
+        cláusula longa —, mas vale menos, e o relatório distingue os dois.
+        """
+        return self.encontrado and self.pagina is not None and bool(self.trecho_origem)
+
+
+class ApoliceExtraida(BaseModel):
+    """Uma apólice depois de lida e estruturada. É o que a frente B entrega."""
+
+    documento: str = Field(description="nome do arquivo de origem")
+    seguradora: str | None = None
+    campos: list[CampoExtraido]
+    modelo_usado: str | None = Field(
+        default=None, description="qual LLM gerou esta extração, para o relatório"
+    )
+
+    @field_validator("campos")
+    @classmethod
+    def _sem_campo_repetido(cls, v: list[CampoExtraido]) -> list[CampoExtraido]:
+        ids = [c.campo_id for c in v]
+        if len(ids) != len(set(ids)):
+            repetidos = sorted({i for i in ids if ids.count(i) > 1})
+            raise ValueError(f"campo extraido mais de uma vez: {', '.join(repetidos)}")
+        return v
+
+    @property
+    def nome(self) -> str:
+        """Como esta apólice aparece no relatório."""
+        return self.seguradora or self.documento
+
+    def campo(self, campo_id: str) -> CampoExtraido | None:
+        return next((c for c in self.campos if c.campo_id == campo_id), None)
+
+    @property
+    def encontrados(self) -> int:
+        return sum(1 for c in self.campos if c.encontrado)
+
+    @property
+    def rastreaveis(self) -> int:
+        return sum(1 for c in self.campos if c.rastreavel)
+
+
 def _normalizar(texto: str) -> str:
     """Tira acento, caixa e espaço repetido — para comparar citação com original."""
     sem_acento = "".join(
