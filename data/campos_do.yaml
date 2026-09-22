@@ -1,0 +1,167 @@
+# Dicionário de campos de apólice D&O — tarefa B.1
+#
+# Esta é a peça do especialista de negócio: define O QUE a plataforma procura em
+# cada apólice e POR QUE cada diferença importa. O motor de extração não decide
+# nada disso — ele obedece a este arquivo, do mesmo modo que o `regras.yaml` do
+# Desafio 5 mandava no classificador de eventos.
+#
+# Alterar este arquivo muda o comportamento da plataforma sem tocar em código.
+#
+# Preenchido por: Paulo Henrique (corretor de seguros do grupo), em 21/09/2026.
+# Os campos `definicao_de_reclamacao`, `sublimites` e `cobertura_investigacoes`
+# foram acrescentados por ele — não estavam na lista inicial.
+#
+# `sinonimos` existe porque a mesma cláusula aparece com nomes diferentes em cada
+# seguradora. Foi verificado contra as condições gerais reais em `data/apolices/`:
+# todos os 15 campos ocorrem em pelo menos um dos documentos.
+
+versao: 1
+definido_por: Paulo Henrique (corretor de seguros)
+data: 2026-09-21
+
+campos:
+  - id: limite_maximo_indenizacao
+    rotulo: Limite Máximo de Indenização (LMI)
+    significado: Valor máximo que a seguradora paga no total da apólice.
+    sinonimos: [Limite de Garantia, Capital Segurado, LMG, Limite Máximo de Garantia]
+    tipo: valor_monetario
+    porque_importa: >-
+      É um dos principais números da apólice; se os limites forem diferentes, o
+      valor máximo disponível para indenizações também muda.
+
+  - id: franquia
+    rotulo: Franquia / Retenção
+    significado: Valor que o segurado paga antes de a cobertura começar.
+    sinonimos: [Participação Obrigatória do Segurado, Retention, Dedutível, Retenção]
+    tipo: valor_monetario
+    porque_importa: >-
+      Muda quanto do prejuízo fica a cargo do segurado e pode fazer uma diferença
+      relevante em um sinistro.
+
+  - id: vigencia
+    rotulo: Vigência
+    significado: Data de início e fim da cobertura.
+    sinonimos: [Período de Vigência, Prazo de Seguro]
+    tipo: periodo
+    porque_importa: >-
+      Mostra o período em que a apólice está vigente e é necessário para entender
+      quando uma reclamação pode ser apresentada.
+
+  - id: retroatividade
+    rotulo: Retroatividade
+    significado: A partir de que data atos anteriores à apólice ficam cobertos.
+    sinonimos: [Data Retroativa, Cobertura Retroativa, Data de Retroatividade]
+    tipo: data
+    porque_importa: >-
+      Uma data retroativa diferente pode mudar quais fatos passados podem gerar
+      cobertura.
+
+  - id: prazo_complementar
+    rotulo: Prazo Complementar / Suplementar
+    significado: Tempo após o fim da apólice em que ainda se pode reclamar.
+    sinonimos: [Extended Reporting Period, Prazo de Notificação, Prazo Adicional]
+    tipo: prazo
+    porque_importa: >-
+      Diferenças nesse prazo podem alterar por quanto tempo o segurado ainda pode
+      comunicar determinadas reclamações após o término da apólice.
+
+  - id: ambito_geografico
+    rotulo: Âmbito Geográfico
+    significado: Em que países a cobertura vale.
+    sinonimos: [Abrangência Territorial, Jurisdição, Âmbito Territorial, Território]
+    tipo: texto
+    porque_importa: >-
+      Pode haver diferença nos países ou jurisdições cobertos, principalmente
+      quando a empresa ou seus administradores atuam fora do Brasil.
+    # Não ocorre com este nome em uma das duas apólices testadas: é justamente o
+    # caso em que o modelo precisa achar o conceito sob outro rótulo.
+
+  - id: definicao_segurado
+    rotulo: Definição de Segurado
+    significado: Quem exatamente está coberto (diretores, conselheiros, cônjuge, espólio).
+    sinonimos: [Pessoa Segurada, Insured Person, Segurados]
+    tipo: texto
+    porque_importa: >-
+      A definição determina quem pode ter proteção pela apólice e pode incluir ou
+      excluir diferentes pessoas e funções.
+
+  - id: custos_defesa
+    rotulo: Custos de Defesa
+    significado: Se honorários advocatícios entram e se consomem o limite.
+    sinonimos: [Despesas de Defesa, Defence Costs, Custos de Defesa]
+    tipo: texto
+    porque_importa: >-
+      Custos de defesa podem ser altos e é importante saber se eles consomem o
+      mesmo limite usado para pagar indenizações.
+
+  - id: multas_administrativas
+    rotulo: Cobertura para Multas Administrativas
+    significado: Se multas de órgãos reguladores são cobertas.
+    sinonimos: [Penalidades Civis e Administrativas, Multas e Penalidades]
+    tipo: texto
+    porque_importa: >-
+      A existência, o alcance e as condições dessa cobertura podem mudar bastante
+      a proteção disponível em determinados processos administrativos.
+
+  - id: exclusao_atos_dolosos
+    rotulo: Exclusão de Atos Dolosos
+    significado: Como a apólice trata fraude e dolo comprovado.
+    sinonimos: [Conduta Dolosa, Atos Fraudulentos, Atos Desonestos]
+    tipo: texto
+    porque_importa: >-
+      A redação da exclusão pode definir quando determinados atos deixam de ter
+      cobertura e pode alterar o alcance da proteção.
+
+  - id: exclusao_ambiental
+    rotulo: Exclusão de Poluição / Ambiental
+    significado: Se danos ambientais ficam de fora.
+    sinonimos: [Riscos Ambientais, Poluição, Dano Ambiental]
+    tipo: texto
+    porque_importa: >-
+      Permite identificar diferenças no tratamento de riscos ambientais, que podem
+      estar excluídos, limitados ou sujeitos a condições específicas.
+
+  - id: clausula_rescisao
+    rotulo: Cláusula de Rescisão
+    significado: Em que condições a apólice pode ser cancelada.
+    sinonimos: [Cancelamento, Resilição, Rescisão Contratual]
+    tipo: texto
+    porque_importa: >-
+      As condições de cancelamento e seus efeitos podem ser diferentes entre
+      seguradoras e afetar a continuidade da cobertura.
+
+  # ---------------------------------------------------------------------------
+  # Acrescentados pelo especialista — não estavam na lista inicial
+  # ---------------------------------------------------------------------------
+
+  - id: definicao_reclamacao
+    rotulo: Definição de Reclamação
+    significado: O que a apólice considera uma reclamação para fins de cobertura.
+    sinonimos: [Reclamação, Reclamações, Claim]
+    tipo: texto
+    porque_importa: >-
+      A definição é importante porque determina quais tipos de demanda, notificação
+      ou procedimento podem acionar a apólice.
+
+  - id: sublimites
+    rotulo: Sublimites
+    significado: Limites específicos aplicáveis a determinadas coberturas ou despesas.
+    sinonimos: [Sublimite, Sub-limite, Limites Específicos]
+    tipo: texto
+    porque_importa: >-
+      Duas apólices podem ter o mesmo LMI, mas valores diferentes para coberturas
+      específicas por causa dos sublimites.
+    # O insight mais valioso da lista: comparar só o LMI pode enganar. Este campo
+    # é o que impede a plataforma de declarar duas apólices equivalentes quando o
+    # limite total coincide mas a cobertura real não.
+
+  - id: cobertura_investigacoes
+    rotulo: Cobertura para Investigações
+    significado: >-
+      Se custos relacionados a investigações, inquéritos ou procedimentos
+      administrativos são cobertos.
+    sinonimos: [Investigações, Inquéritos, Procedimentos Administrativos]
+    tipo: texto
+    porque_importa: >-
+      Uma investigação pode gerar custos de defesa mesmo antes de existir uma ação
+      judicial, então vale identificar se há cobertura.
