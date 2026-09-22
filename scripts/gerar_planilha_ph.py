@@ -94,14 +94,35 @@ def aba_campos(wb: Workbook) -> None:
     cabecalho(
         ws,
         ["Campo", "O que significa", "Como aparece na apólice (outros nomes)",
-         "Comparar?", "Por que importa (sua justificativa)"],
-        [34, 46, 40, 13, 56],
+         "Olhar este campo?", "Se as duas apólices forem diferentes aqui, por que isso importa para o cliente?"],
+        [34, 46, 40, 16, 58],
     )
 
     validacao = DataValidation(type="list", formula1='"SIM,NAO,TALVEZ"', allow_blank=True)
     ws.add_data_validation(validacao)
 
-    linha = 2
+    # Uma linha já preenchida, para não restar dúvida sobre o que escrever. Sem ela,
+    # a coluna da justificativa é lida como "qual apólice é melhor" — não é: a
+    # ferramenta não julga, ela mostra a diferença e explica por que ela pesa.
+    exemplo = PatternFill("solid", fgColor="E2EFDA")
+    for col, valor in enumerate(
+        [
+            "EXEMPLO — Limite Máximo de Indenização",
+            "Valor máximo que a seguradora paga no total da apólice",
+            "Limite de Garantia, LMG, Capital Segurado",
+            "SIM",
+            "Um limite menor pode deixar o cliente descoberto num sinistro grande. "
+            "É o primeiro número que eu olho numa proposta.",
+        ],
+        start=1,
+    ):
+        c = ws.cell(row=2, column=col, value=valor)
+        c.fill = exemplo
+        c.font = Font(italic=True, size=10)
+        c.alignment = Alignment(wrap_text=True, vertical="top")
+    ws.row_dimensions[2].height = 46
+
+    linha = 3
     for nome, significado, sinonimos in CANDIDATOS:
         ws.cell(row=linha, column=1, value=nome).alignment = Alignment(wrap_text=True, vertical="top")
         ws.cell(row=linha, column=2, value=significado).alignment = Alignment(wrap_text=True, vertical="top")
@@ -172,21 +193,38 @@ def aba_instrucoes(wb: Workbook) -> None:
     blocos = [
         ("Projeto Final — o que preciso de você", True, 14),
         ("", False, 11),
-        ("Paulo, a plataforma vai ler apólices D&O em PDF e apontar as diferenças "
-         "entre elas automaticamente. Para isso funcionar, alguém precisa dizer "
-         "QUAIS diferenças importam. Esse alguém é você.", False, 11),
+        ("Paulo, imagine que um cliente te manda duas propostas de D&O de seguradoras "
+         "diferentes e pergunta: 'qual a diferença entre elas?'. Você não lê as 120 "
+         "páginas. Você vai direto em uns 10 pontos que sabe de cor.", False, 11),
         ("", False, 11),
-        ("No Desafio 5 foram os seus limiares de chuva e vento que fizeram o sistema "
-         "avisar as pessoas certas. Aqui é a mesma coisa: sem a sua lista, o programa "
-         "compara tudo e não destaca nada.", False, 11),
+        ("ESSA LISTA É O QUE EU PRECISO. Só isso.", True, 12),
+        ("", False, 11),
+        ("A diferença em relação ao Desafio 5", True, 12),
+        ("Lá, você deu REGRAS: 'acima de 40 mm de chuva, avise o segurado'. O sistema "
+         "decidia sozinho e disparava o alerta.", False, 11),
+        ("Aqui é mais simples: você NÃO decide nada e NÃO compara nada. Você só diz "
+         "ONDE OLHAR. O programa lê as duas apólices, acha esses pontos em cada uma e "
+         "mostra lado a lado. Quem olha e decide é o corretor que usar a ferramenta.", False, 11),
+        ("", False, 11),
+        ("Por exemplo: se você marcar SIM no Limite Máximo de Indenização, o sistema "
+         "vai cuspir algo assim:", False, 11),
+        ("        Apólice A: R$ 10 milhões   |   Apólice B: R$ 5 milhões   -> DIFERENTE",
+         True, 11),
+        ("Ele não diz qual é melhor. Só mostra. Se você não colocar o LMI na lista, "
+         "ele nem procura esse número — e o cliente perde a informação mais "
+         "importante da comparação.", False, 11),
         ("", False, 11),
         ("São duas abas para preencher:", True, 12),
         ("", False, 11),
-        ("ABA 1 — Campos a comparar", True, 11),
-        ("Listei 12 candidatos com o que entendi que cada um significa. Para cada linha, "
-         "diga na coluna amarela se vale comparar (SIM / NAO / TALVEZ) e escreva por quê "
-         "em uma frase. Se eu escrevi alguma definição errada, corrija sem dó.", False, 11),
-        ("Se faltou campo que você olha na prática, use as linhas vazias do fim.", False, 11),
+        ("ABA 1 — Onde olhar", True, 11),
+        ("Listei 12 pontos com o que entendi que cada um significa. Para cada linha, "
+         "diga na coluna amarela se vale olhar (SIM / NAO / TALVEZ). Na última coluna, "
+         "escreva por que essa diferença pesa para o cliente — uma frase basta.", False, 11),
+        ("A primeira linha da aba já está preenchida como EXEMPLO, em verde. "
+         "É exatamente esse nível de resposta que eu preciso.", False, 11),
+        ("Se eu escrevi alguma definição errada, corrija sem dó — eu chutei por "
+         "leitura, você faz isso na prática.", False, 11),
+        ("Se faltou ponto que você olha e não está na lista, use as linhas vazias do fim.", False, 11),
         ("", False, 11),
         ("ABA 2 — Onde achar apólices", True, 11),
         ("Precisamos de pelo menos três apólices D&O de seguradoras diferentes, "
