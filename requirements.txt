@@ -11,8 +11,13 @@ langchain-google-genai>=2.0
 # langchain-anthropic>=0.3.0
 # langchain-openai>=0.2.0
 
-# Leitura de documentos (a definir na Fase 0)
+# Leitura de documentos
 pypdf>=5.0
+# renderiza pagina de PDF como imagem, sem depender do poppler instalado
+pypdfium2>=4.30
+# OCR: exige o Tesseract instalado no sistema (ver README)
+pytesseract>=0.3.13
+pillow>=10.0
 
 # Interface
 streamlit>=1.40
