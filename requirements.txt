@@ -21,6 +21,13 @@ pillow>=10.0
 
 # Interface
 streamlit>=1.40
+# A interface importa pandas direto (tabela colorida da comparação). Ele já vem
+# instalado como dependência do Streamlit, mas fica declarado aqui: depender de
+# pacote por tabela é o tipo de coisa que quebra numa instalação limpa.
+pandas>=2.0
+
+# Apresentação (pitch deck — nome de arquivo exigido pelo enunciado)
+python-pptx>=1.0
 
 # Testes
 pytest>=8.0

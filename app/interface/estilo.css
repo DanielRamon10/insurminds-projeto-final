@@ -1,0 +1,218 @@
+/* Visual da interface — frente D.
+ *
+ * O Streamlit não é generoso com layout, mas dá três alavancas boas, e são
+ * exatamente estas que usamos aqui, nesta ordem de preferência:
+ *
+ *   1. `.streamlit/config.toml` para o tema (cores, fonte base);
+ *   2. componentes nativos para o que é interativo (`st.badge`, `st.popover`,
+ *      `st.metric`, `st.dataframe`) — nada de reinventar botão em HTML;
+ *   3. este arquivo só para o que o Streamlit não tem: o cabeçalho, os cartões
+ *      de valor, a citação do trecho de origem e os selos de veredito.
+ *
+ * A regra que evitou retrabalho: nada aqui depende de estrutura interna do
+ * Streamlit além de `stVerticalBlockBorderWrapper`, que é o contêiner de
+ * `st.container(border=True)`. Se o Streamlit mudar esse nome, o pior que
+ * acontece é o cartão perder a sombra — nenhuma informação desaparece.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+html, body, [class*="st-"], button, input, textarea, select {
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important;
+}
+
+.stApp {
+    background:
+        radial-gradient(1100px 520px at 8% -10%, #E7F5F2 0%, rgba(255, 255, 255, 0) 58%),
+        radial-gradient(900px 500px at 100% 0%, #EEF2FF 0%, rgba(255, 255, 255, 0) 55%),
+        #FBFCFD;
+}
+
+.block-container {
+    padding-top: 1.6rem;
+    padding-bottom: 3rem;
+    max-width: 1450px;
+}
+
+/* ---------------------------------------------------------------------------
+   Cabeçalho
+   -------------------------------------------------------------------------- */
+
+.hero {
+    border-radius: 24px;
+    padding: 30px 34px 26px 34px;
+    background: linear-gradient(135deg, #08312F 0%, #0E6E63 55%, #14A08C 100%);
+    box-shadow: 0 20px 44px rgba(8, 49, 47, .26);
+    color: #FFFFFF;
+}
+
+.hero h1 {
+    margin: 0 0 6px 0;
+    font-size: 2.1rem;
+    font-weight: 800;
+    letter-spacing: -.02em;
+    line-height: 1.12;
+}
+
+.hero p {
+    margin: 0;
+    font-size: 1rem;
+    color: rgba(255, 255, 255, .86);
+    max-width: 78ch;
+}
+
+.hero .linha-selos {
+    margin-top: 16px;
+}
+
+.hero .selo {
+    display: inline-block;
+    margin: 0 8px 8px 0;
+    padding: 5px 13px;
+    border-radius: 999px;
+    font-size: .76rem;
+    font-weight: 600;
+    letter-spacing: .01em;
+    background: rgba(255, 255, 255, .15);
+    border: 1px solid rgba(255, 255, 255, .28);
+    color: #FFFFFF;
+}
+
+/* ---------------------------------------------------------------------------
+   Cartões de diferença (D.2) e valores (D.3)
+   -------------------------------------------------------------------------- */
+
+div[data-testid="stVerticalBlockBorderWrapper"] {
+    border-radius: 18px;
+    background: #FFFFFF;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, .05);
+}
+
+.campo-titulo {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #0F172A;
+    letter-spacing: -.01em;
+}
+
+.campo-significado {
+    font-size: .82rem;
+    color: #64748B;
+    line-height: 1.35;
+    margin-top: 2px;
+}
+
+.valor-nome {
+    font-size: .74rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #0E6E63;
+    margin-bottom: 4px;
+}
+
+.valor {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #0F172A;
+    line-height: 1.35;
+    background: #F2F8F7;
+    border: 1px solid #D8EAE6;
+    border-left: 3px solid #0D9488;
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+
+.valor-ausente {
+    font-size: .95rem;
+    font-style: italic;
+    color: #94A3B8;
+    background: #F8FAFC;
+    border: 1px dashed #CBD5E1;
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+
+.porque {
+    margin-top: 14px;
+    padding: 11px 14px;
+    border-radius: 12px;
+    background: #F8FAFC;
+    border: 1px solid #E7ECF1;
+    border-left: 3px solid #94A3B8;
+    color: #334155;
+    font-size: .87rem;
+    line-height: 1.45;
+}
+
+.porque b {
+    color: #0F172A;
+}
+
+.trecho {
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-size: .8rem;
+    line-height: 1.5;
+    color: #E2E8F0;
+    background: #0F172A;
+    border-radius: 12px;
+    padding: 13px 15px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.pagina {
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-size: .76rem;
+    color: #64748B;
+    margin-top: 6px;
+}
+
+/* ---------------------------------------------------------------------------
+   Títulos de seção, cartões de apólice e rodapé
+   -------------------------------------------------------------------------- */
+
+.secao {
+    margin: 26px 0 10px 0;
+    padding-left: 12px;
+    border-left: 4px solid #0D9488;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #0F172A;
+    letter-spacing: -.01em;
+}
+
+.secao .contagem {
+    font-weight: 500;
+    color: #64748B;
+    font-size: .9rem;
+}
+
+.apolice-nome {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #0F172A;
+    letter-spacing: -.01em;
+}
+
+.apolice-arquivo {
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-size: .76rem;
+    color: #64748B;
+    margin-bottom: 6px;
+}
+
+.apolice-fonte {
+    font-size: .82rem;
+    color: #475569;
+    margin-bottom: 6px;
+}
+
+.rodape {
+    margin-top: 34px;
+    padding-top: 14px;
+    border-top: 1px solid #E7ECF1;
+    font-size: .78rem;
+    color: #94A3B8;
+    text-align: center;
+}

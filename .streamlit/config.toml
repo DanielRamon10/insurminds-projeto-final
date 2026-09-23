@@ -1,0 +1,27 @@
+# Tema da interface da frente D.
+#
+# O arquivo é lido pelo Streamlit a partir da raiz do projeto, então ele vale
+# para `streamlit run app/interface/app.py` executado de dentro do repositório —
+# que é como o README manda rodar. É a forma nativa de mudar a cara da
+# aplicação: sem CSS, sem gambiarra, e o tema acompanha a versão do Streamlit.
+
+[theme]
+# Verde-petróleo: é a cor que o grupo já usa no hero e nos selos de veredito,
+# e é industrial sem ser corporativo-genérico.
+primaryColor = "#0D9488"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F5F7F9"
+textColor = "#0F172A"
+font = "sans serif"
+base = "light"
+
+[client]
+toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false
+
+[server]
+# A demonstração roda na máquina de quem apresenta; não há razão para o
+# servidor ficar exposto na rede durante a gravação do vídeo.
+headless = true
