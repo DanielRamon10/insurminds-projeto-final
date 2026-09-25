@@ -1,0 +1,157 @@
+{
+  "documento": "aig_do.pdf",
+  "seguradora": "AIG Seguros Brasil S.A.",
+  "campos": [
+    {
+      "campo_id": "limite_maximo_indenizacao",
+      "valor": null,
+      "trecho_origem": "O Limite Máximo de Garantia da Apólice é fixado com valor menor ou igual à soma dos limites máximos de indenizações estabelecidos individualmente para cada cobertura contratada",
+      "pagina": 4,
+      "paginas_possiveis": [
+        4
+      ],
+      "observacao": "O valor é definido na Especificação da Apólice."
+    },
+    {
+      "campo_id": "franquia",
+      "valor": null,
+      "trecho_origem": "A importância definida na Especificação da Apólice, representando a participação da Sociedade ou do Segurado nos prejuízos consequentes dos Custos de Defesa e da Perda Indenizável.",
+      "pagina": 8,
+      "paginas_possiveis": [
+        8
+      ],
+      "observacao": "O valor é definido na Especificação da Apólice."
+    },
+    {
+      "campo_id": "vigencia",
+      "valor": null,
+      "trecho_origem": "O Período de Vigência da Apólice será aquele indicado na Especificação da Apólice, sendo que, quando não houver adiantamento do Prêmio, seu início será a partir das 24 (vinte e quatro) horas do dia da aceitação da Proposta",
+      "pagina": 42,
+      "paginas_possiveis": [
+        42
+      ],
+      "observacao": "O período é indicado na Especificação da Apólice."
+    },
+    {
+      "campo_id": "retroatividade",
+      "valor": null,
+      "trecho_origem": "Data igual ou anterior ao início da vigência da primeira de uma série sucessiva e ininterrupta de apólices de Seguro à Base de Reclamações, a ser pactuada pelas partes por ocasião da contratação inicial do seguro e indicada na Especificação da Apólice",
+      "pagina": 3,
+      "paginas_possiveis": [
+        3
+      ],
+      "observacao": "A data é pactuada e indicada na Especificação da Apólice."
+    },
+    {
+      "campo_id": "prazo_complementar",
+      "valor": null,
+      "trecho_origem": "É a extensão de prazo para a apresentação de Reclamações, concedida pela Seguradora nos termos da cláusula Prazo Adicional, indicado na Especificação da Apólice e que pode ser estendido mediante endosso e pagamento do respectivo prêmio adicional.",
+      "pagina": 5,
+      "paginas_possiveis": [
+        5
+      ],
+      "observacao": "O prazo é indicado na Especificação da Apólice."
+    },
+    {
+      "campo_id": "ambito_geografico",
+      "valor": "Mundial",
+      "trecho_origem": "Na medida legalmente permitida, esta Apólice cobrirá qualquer Reclamação realizada contra uma Parte Segurada em qualquer lugar do mundo , observado o disposto na cláusula Sanção, Embargo, Proibição ou Restrição Nacional ou Internacional",
+      "pagina": 33,
+      "paginas_possiveis": [
+        33
+      ],
+      "observacao": null
+    },
+    {
+      "campo_id": "definicao_segurado",
+      "valor": "Conselheiros, Diretores, Empregados e indivíduos contratados por pessoa jurídica para exercer funções equivalentes, atuando em suas respectivas funções na Sociedade.",
+      "trecho_origem": "Qualquer pessoa física que seja, tenha sido ou se torne um: (i) Conselheiro ou Diretor de uma Sociedade desde que atuando em sua função na Sociedade; (ii) Empregado de uma Sociedade",
+      "pagina": 12,
+      "paginas_possiveis": [
+        12
+      ],
+      "observacao": null
+    },
+    {
+      "campo_id": "custos_defesa",
+      "valor": "Incluídos no Limite Máximo de Garantia da Apólice.",
+      "trecho_origem": "Os Limites Máximos de Custos de Defesa são parte do valor e não em excesso ao Limite Máximo de Garantia da Apólice.",
+      "pagina": 4,
+      "paginas_possiveis": [
+        4
+      ],
+      "observacao": null
+    },
+    {
+      "campo_id": "multas_administrativas",
+      "valor": "Cobertas se contratada a Cobertura Adicional específica, exceto multas contratuais, criminais ou impostas nos EUA.",
+      "trecho_origem": "a Seguradora pagará os Custos de Defesa de Reclamações cobertas sobre esta natureza e, a título de Perdas Indenizáveis, quaisquer multas ou penalidades cíveis ou administrativas impostas a um Segurado sempre que consideradas seguráveis pela legislação aplicável",
+      "pagina": 56,
+      "paginas_possiveis": [
+        56
+      ],
+      "observacao": null
+    },
+    {
+      "campo_id": "exclusao_atos_dolosos",
+      "valor": "Excluídos atos ilícitos com dolo ou culpa grave equiparável ao dolo, fraude ou desonestidade, após decisão judicial ou confissão.",
+      "trecho_origem": "um ato ilícito cometido com dolo ou culpa grave equiparável ao dolo pel a Parte Segurada, beneficiário, sócios controladores, dirigentes e administradores legais ou pelo representante, de um ou de outro, ou com sua conivência, incluindo desonestidade e fraude",
+      "pagina": 27,
+      "paginas_possiveis": [
+        27
+      ],
+      "observacao": null
+    },
+    {
+      "campo_id": "exclusao_ambiental",
+      "valor": "Excluídos danos ambientais, exceto se contratada a Cobertura Adicional de Responsabilidade por Danos Ambientais.",
+      "trecho_origem": "qualquer dano ambiental efetivo, suposto ou ameaçado , incluindo, mas não limita ndo a, descarga, dispensa, liberação ou vazamento de Poluentes, os registros e procedimentos de controle daqueles ou a qualquer ordem ou pedido para fazer testes",
+      "pagina": 28,
+      "paginas_possiveis": [
+        28
+      ],
+      "observacao": null
+    },
+    {
+      "campo_id": "clausula_rescisao",
+      "valor": "Cancelamento por exaustão do limite, acordo entre partes, ou falta de pagamento do prêmio.",
+      "trecho_origem": "O presente contrato de seguro será cancelado: (i) quando a indenização ou a soma das indenizações pagas atingirem o Limite Máximo de Garantia da Apólice, não tendo o Tomador direito a qualquer restituição de Prêmio; ou (ii) total ou parcialmente, a qualquer tempo, mediante acordo entre as partes",
+      "pagina": 43,
+      "paginas_possiveis": [
+        43
+      ],
+      "observacao": null
+    },
+    {
+      "campo_id": "definicao_reclamacao",
+      "valor": "Reivindicação escrita, processo judicial, administrativo, arbitral ou criminal contra um Segurado decorrente de Ato Danoso.",
+      "trecho_origem": "Uma reivindicação ou um requerimento escrito ou um processo judicial, administrativo ou arbitral, incluindo , mas não se limitando, àqueles de natureza cível, trabalhista, tributária, consumerista ou previdenciária ou de natureza criminal, contra um Segurado decorrente de um Ato Danoso",
+      "pagina": 11,
+      "paginas_possiveis": [
+        11
+      ],
+      "observacao": null
+    },
+    {
+      "campo_id": "sublimites",
+      "valor": null,
+      "trecho_origem": "Os Limites Máximos de Indenização por Cobertura Contratada são parte do valor e não em excesso ao Limite Máximo de Garantia da Apólice.",
+      "pagina": 4,
+      "paginas_possiveis": [
+        4
+      ],
+      "observacao": "Os sublimites são definidos na Especificação da Apólice para cada cobertura."
+    },
+    {
+      "campo_id": "cobertura_investigacoes",
+      "valor": "Cobertas se contratada a Extensão de Cobertura para Custos de Investigação.",
+      "trecho_origem": "A Seguradora pagará, até o Limite Máximo de Custos de Defesa e o Limite Máximo de Perdas Indenizáveis estabelecido na Especificação da Apólice, os custos, despesas e honorários [...] diretamente relacionadas à preparação para ou participação na Investigação.",
+      "pagina": 19,
+      "paginas_possiveis": [
+        19
+      ],
+      "observacao": null
+    }
+  ],
+  "modelo_usado": "google/gemini-3.1-flash-lite"
+}
