@@ -117,7 +117,7 @@ class Banco:
         versões faria a comparação escolher uma ao acaso.
         """
         with self._conectar() as c:
-            cursor = c.execute(
+            c.execute(
                 """
                 INSERT INTO apolices (documento, seguradora, modelo_usado, processada_em)
                 VALUES (?, ?, ?, ?)
@@ -133,9 +133,21 @@ class Banco:
                     datetime.now().isoformat(timespec="seconds"),
                 ),
             )
-            apolice_id = cursor.lastrowid or c.execute(
-                "SELECT id FROM apolices WHERE documento = ?", (apolice.documento,)
-            ).fetchone()["id"]
+
+            # O id vem de um SELECT, e não de `cursor.lastrowid`. Quando o INSERT
+            # cai no DO UPDATE, o SQLite não zera o `last_insert_rowid` da conexão:
+            # ele continua devolvendo o id da última inserção bem-sucedida, que é
+            # de outra apólice. No banco em arquivo isso passava despercebido
+            # porque cada operação abre uma conexão nova, com o contador zerado; no
+            # banco em memória, cuja conexão é reaproveitada, a segunda gravação do
+            # mesmo documento associava os campos à apólice errada e, na sequência,
+            # estourava `FOREIGN KEY constraint failed` (regressão coberta em
+            # `tests/test_armazenamento.py`).
+            apolice_id = int(
+                c.execute(
+                    "SELECT id FROM apolices WHERE documento = ?", (apolice.documento,)
+                ).fetchone()["id"]
+            )
 
             c.execute("DELETE FROM campos WHERE apolice_id = ?", (apolice_id,))
             c.executemany(

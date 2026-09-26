@@ -23,6 +23,7 @@ from app.domain.exemplos import FONTE_EXEMPLO, carregar_exemplos
 from app.interface import apresentacao
 from app.interface.apresentacao import (
     ESTILOS,
+    SITUACOES_NO_FILTRO,
     TEXTO_AUSENTE,
     TEXTO_SEM_PAGINA,
     ValorNaTela,
@@ -203,6 +204,30 @@ def test_cartao_com_apolice_nao_carregada_nao_derruba_a_tela():
     assert all(v.ausente for c in cartoes for v in c.valores)
 
 
+def test_cartoes_saem_na_ordem_em_que_a_tela_os_mostra():
+    """Importância do veredito primeiro, rótulo do campo depois — na tela e no console."""
+    cartoes = montar_cartoes(COMPARACAO, APOLICES)
+    chaves = [(estilo(c.veredito).ordem, c.rotulo) for c in cartoes]
+    assert chaves == sorted(chaves)
+
+
+def test_completos_trazem_todos_os_campos_do_dicionario_na_mesma_ordem():
+    cartoes = montar_cartoes(COMPARACAO, APOLICES, apenas_relevantes=False)
+    chaves = [(estilo(c.veredito).ordem, c.rotulo) for c in cartoes]
+    assert chaves == sorted(chaves)
+    assert len(cartoes) == len(DICIONARIO)
+
+
+def test_filtro_da_barra_oferece_so_o_que_distingue_as_apolices():
+    """Duas alavancas sobre a mesma coisa brigavam: o filtro pedia igual, o botão
+    cortava de volta. O que entra por uma não pode sair pela outra."""
+    assert set(SITUACOES_NO_FILTRO) == {
+        Veredito.AUSENTE_EM_ALGUMA,
+        Veredito.DIFERENTE,
+        Veredito.REDACAO_DIVERGENTE,
+    }
+
+
 # ---------------------------------------------------------------------------
 # Números, tabela e CSV
 # ---------------------------------------------------------------------------
@@ -353,6 +378,71 @@ def test_aviso_da_extracao_pendente_diz_o_que_falta_e_o_que_ja_funciona():
     assert "ingestão" in aviso
 
 
+def test_rastreabilidade_nao_deixa_celula_vazia():
+    """Célula em branco na tabela de origem vira "não sei"; ausente é resposta."""
+    linhas = linhas_rastreabilidade(COMPARACAO, APOLICES, apenas_encontrados=False)
+    linha = next(
+        l for l in linhas
+        if l["Campo"].startswith("Sublimites") and l["Apólice"] == "AIG"
+    )
+    assert linha["Valor"] == TEXTO_AUSENTE
+    assert linha["Confere"] == "não"
+    assert linha["Trecho de origem"] == ""
+
+
+# ---------------------------------------------------------------------------
+# Demonstração e banco — a trava que protege dado real
+# ---------------------------------------------------------------------------
+
+
+def test_demonstracao_nunca_sobrescreve_extracao_real():
+    """Trava contra o pior acidente possível: apagar a extração de verdade.
+
+    Depois que a frente B entrar, os botões de exemplo continuam na tela. Sem
+    esta trava, um clique apagaria a extração real e a comparação voltaria a
+    mostrar dado fabricado — sem avisar ninguém.
+    """
+    from app.domain.armazenamento import Banco
+    from app.interface.app import semear_exemplos
+
+    banco = Banco(":memory:")
+    try:
+        banco.salvar(ApoliceExtraida(
+            documento="chubb_do_capital_fechado.pdf",
+            seguradora="Chubb",
+            modelo_usado="gemini-3.6-flash",
+            campos=[CampoExtraido(
+                campo_id="franquia", valor="R$ 42.000,00",
+                trecho_origem="franquia real extraida do documento", pagina=3,
+            )],
+        ))
+
+        gravadas, preservadas = semear_exemplos(banco, forcar=True)
+
+        assert preservadas == 1, "a extração real foi sobrescrita pelo exemplo"
+        assert gravadas == 1  # a outra apólice, que não estava no banco, entrou
+
+        apolice = banco.carregar("chubb_do_capital_fechado.pdf")
+        assert apolice.campo("franquia").valor == "R$ 42.000,00"
+        assert apolice.modelo_usado == "gemini-3.6-flash"
+    finally:
+        banco.fechar()
+
+
+def test_recarregar_exemplos_regrava_apenas_apolice_de_exemplo():
+    """Recarregar é para consertar a demonstração, não para mexer em dado real."""
+    from app.domain.armazenamento import Banco
+    from app.interface.app import semear_exemplos
+
+    banco = Banco(":memory:")
+    try:
+        assert semear_exemplos(banco) == (2, 0)  # banco vazio: entra tudo
+        assert semear_exemplos(banco, forcar=True) == (2, 0)  # só exemplo: regrava
+        assert len(banco.listar()) == 2
+    finally:
+        banco.fechar()
+
+
 # ---------------------------------------------------------------------------
 # A aplicação inteira, executada de verdade
 # ---------------------------------------------------------------------------
@@ -396,3 +486,62 @@ def test_a_tela_declara_que_a_comparacao_usa_exemplos(tela):
     """Dado fabricado nunca pode aparecer como saída do sistema."""
     avisos = "\n".join(w.value for w in tela.warning)
     assert "extrações de exemplo" in avisos
+
+
+def _nova_tela():
+    """Uma execução nova da aplicação, para os testes que clicam em controles."""
+    streamlit_testing = pytest.importorskip("streamlit.testing.v1")
+    from app.interface import app as interface
+
+    at = streamlit_testing.AppTest.from_file(
+        str(Path(interface.__file__)), default_timeout=90
+    )
+    at.run()
+    assert not at.exception, [e.value for e in at.exception]
+    return at
+
+
+def test_toggle_incluir_iguais_acrescenta_os_campos_identicos():
+    """Regressão da auditoria da frente D: o botão ligava e nada mudava.
+
+    O filtro de situações pedia os iguais e o próprio botão cortava de volta —
+    duas alavancas brigando pela mesma coisa. Agora o botão é o único caminho
+    para os iguais, e ligar ele tem de somar os 4 campos à lista.
+    """
+    at = _nova_tela()
+    antes = sum("Por que importa:" in m.value for m in at.markdown)
+
+    at.toggle[0].set_value(True).run()
+    assert not at.exception, [e.value for e in at.exception]
+
+    depois = sum("Por que importa:" in m.value for m in at.markdown)
+    assert antes == 11
+    assert depois == 15, "ligar 'incluir iguais' não acrescentou os 4 campos iguais"
+
+    texto = "\n".join(m.value for m in at.markdown)
+    assert "Igual nas duas" in texto
+
+
+def test_filtro_vazio_esvazia_a_comparacao_e_volta():
+    """Desligar todas as situações não pode quebrar a tela — nem deixá-la muda."""
+    at = _nova_tela()
+    filtros = at.sidebar.multiselect[1]
+    assert filtros.value, "o filtro deveria abrir com as 3 situações ligadas"
+
+    filtros.set_value([]).run()
+    assert not at.exception, [e.value for e in at.exception]
+    assert sum("Por que importa:" in m.value for m in at.markdown) == 0
+
+    filtros.set_value(list(filtros.options)).run()
+    assert sum("Por que importa:" in m.value for m in at.markdown) == 11
+
+
+def test_uma_apolice_mostra_o_estado_inicial():
+    """Uma apólice só não é erro: é o estado antes de escolher a segunda."""
+    at = _nova_tela()
+    seletor = at.sidebar.multiselect[0]
+    seletor.set_value([seletor.options[0]]).run()
+    assert not at.exception, [e.value for e in at.exception]
+
+    infos = " | ".join(i.value for i in at.info)
+    assert "duas apólices" in infos

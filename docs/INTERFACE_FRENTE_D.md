@@ -8,10 +8,13 @@ e apresentação. Quem trabalhou nisto: **Paulo Roberto**.
 ```bash
 pip install -r requirements.txt
 
-# a interface
+# a interface (o navegador abre sozinho, com o tema do .streamlit/config.toml)
 streamlit run app/interface/app.py
 
-# a mesma coisa sem navegador (tarefa D.4 — é o plano B do vídeo)
+# a mesma coisa sem abrir navegador — teste, servidor, script
+streamlit run app/interface/app.py --server.headless true
+
+# a demonstração sem navegador (tarefa D.4 — é o plano B do vídeo)
 python -m scripts.demo_frente_d            # inclui a ingestão real dos PDFs
 python -m scripts.demo_frente_d --rapido   # pula a ingestão
 ```

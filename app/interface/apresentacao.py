@@ -149,6 +149,18 @@ def legenda() -> tuple[EstiloVeredito, ...]:
     return tuple(ESTILOS[v] for v in sorted(ESTILOS, key=lambda v: ESTILOS[v].ordem))
 
 
+#: As situações que o filtro da barra lateral oferece — só o que distingue as
+#: apólices. O que é igual nas duas e o que está fora das duas entra pelo botão
+#: "incluir o que é igual", nunca pelo filtro: duas alavancas sobre a mesma
+#: coisa brigavam entre si (a auditoria da frente D pegou o caso, com o botão
+#: ligado mostrando os mesmos 11 cartões).
+SITUACOES_NO_FILTRO: tuple[Veredito, ...] = (
+    Veredito.AUSENTE_EM_ALGUMA,
+    Veredito.DIFERENTE,
+    Veredito.REDACAO_DIVERGENTE,
+)
+
+
 def sigla(veredito: Veredito) -> str:
     """O símbolo do veredito em uma letra — usado no CSV e na demonstração."""
     return estilo(veredito).simbolo
@@ -286,9 +298,16 @@ def montar_cartoes(
     O `DiferencaCampo` traz valores e páginas, mas não o trecho de origem: isso
     mora na apólice. É aqui que os dois se encontram, e é o que permite o D.3 —
     `d.paginas` para chegar à página, `apolice.campo(id)` para chegar ao trecho.
+
+    Os cartões saem ordenados como a tela os mostra: a importância do veredito
+    primeiro, o rótulo do campo depois. É o que garante que a tela e a
+    demonstração por linha de comando listem na mesma ordem.
     """
     por_nome = {a.nome: a for a in apolices}
-    diferencas = comparacao.relevantes if apenas_relevantes else comparacao.diferencas
+    diferencas = sorted(
+        comparacao.relevantes if apenas_relevantes else comparacao.diferencas,
+        key=lambda d: (estilo(d.veredito).ordem, d.campo.rotulo),
+    )
 
     return tuple(
         CartaoDiferenca(
@@ -423,7 +442,11 @@ def linhas_rastreabilidade(
                 {
                     "Campo": d.campo.rotulo,
                     "Apólice": nome,
-                    "Valor": (campo.valor or "") if campo else TEXTO_AUSENTE,
+                    "Valor": (
+                        campo.valor.strip()
+                        if campo and campo.encontrado and campo.valor
+                        else TEXTO_AUSENTE
+                    ),
                     "Página": campo.pagina if campo else None,
                     "Trecho de origem": (campo.trecho_origem or "") if campo else "",
                     "Confere": "sim" if (campo and campo.rastreavel) else "não",

@@ -21,7 +21,9 @@ toolbarMode = "minimal"
 [browser]
 gatherUsageStats = false
 
-[server]
-# A demonstração roda na máquina de quem apresenta; não há razão para o
-# servidor ficar exposto na rede durante a gravação do vídeo.
-headless = true
+# Sem a seção [server] de propósito. O padrão do Streamlit abre o navegador
+# sozinho quando alguém roda `streamlit run app/interface/app.py` — que é o que
+# quem vai gravar o vídeo quer. Para rodar sem abrir navegador (teste, servidor,
+# script), o flag fica na linha de comando:
+#
+#     streamlit run app/interface/app.py --server.headless true

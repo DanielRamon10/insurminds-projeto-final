@@ -99,11 +99,17 @@ Da perspectiva de quem usa:
 * **Sem edição e sem anotação.** A tela não permite que o especialista corrija um
   valor extraído nem registre uma observação; nesta versão, corrigir significa
   reprocessar ou editar o banco.
+* **Não há como remover uma apólice pela tela.** O banco sabe apagar
+  (`Banco.apagar`), mas a interface não oferece o botão — excluir é operação sem
+  volta e ficou fora do escopo desta versão.
+* **Enviar um arquivo com nome de apólice já processada substitui a extração
+  guardada.** O banco mantém uma versão por documento, e a última extração é a que
+  vale; a tela avisa quando isso acontece, mas não guarda histórico.
+* **Página renderizada não destaca o trecho.** A imagem da página aparece
+  inteira, sem realce no trecho citado — a conferência é visual, não automática.
 * **A conferência visual exige o arquivo.** O botão *De onde veio* renderiza a
   página do PDF apenas quando o documento está na máquina; enviado por upload, ele
   fica em um diretório temporário da sessão e some ao encerrar.
-* **A página renderizada não destaca o trecho.** A imagem da página aparece
-  inteira, sem realce no trecho citado — a conferência é visual, não automática.
 * **Sem autenticação.** Qualquer pessoa com acesso à máquina vê todas as apólices
   gravadas; para um protótipo acadêmico com documentos públicos isso é aceitável,
   para uso real não seria.

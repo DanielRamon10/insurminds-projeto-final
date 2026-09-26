@@ -183,3 +183,28 @@ def test_bancos_em_memoria_sao_independentes():
     assert outro.listar() == []
     um.fechar()
     outro.fechar()
+
+
+def test_regravar_em_banco_de_memoria_nao_troca_de_apolice():
+    """Regressão: `lastrowid` depois de um upsert não é o id da linha atualizada.
+
+    No banco em memória a conexão é reaproveitada entre as operações, e o
+    `last_insert_rowid` do SQLite sobrevive a um `ON CONFLICT DO UPDATE` — ele
+    devolve o id da gravação anterior, de outra apólice. Resultado: os campos da
+    segunda gravação iam para a apólice errada e, logo depois, estourava
+    `FOREIGN KEY constraint failed`. O teste em arquivo não pegava isso porque
+    cada operação abre uma conexão nova, com o contador zerado.
+    """
+    banco = Banco(":memory:")
+    try:
+        banco.salvar(apolice("chubb.pdf", "Chubb", franquia="R$ 50.000,00"))
+        banco.salvar(apolice("aig.pdf", "AIG", franquia="R$ 80.000,00"))
+
+        # a regravação que quebrava: mesmo documento, conexão reaproveitada
+        banco.salvar(apolice("chubb.pdf", "Chubb", franquia="R$ 42.000,00"))
+
+        assert banco.carregar("chubb.pdf").campo("franquia").valor == "R$ 42.000,00"
+        assert banco.carregar("aig.pdf").campo("franquia").valor == "R$ 80.000,00"
+        assert len(banco.listar()) == 2
+    finally:
+        banco.fechar()

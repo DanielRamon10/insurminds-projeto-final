@@ -46,7 +46,7 @@ from app.config import provedores_disponiveis  # noqa: E402
 from app.domain.armazenamento import Banco  # noqa: E402
 from app.domain.campos import DicionarioCampos, carregar_campos  # noqa: E402
 from app.domain.comparacao import Veredito, comparar  # noqa: E402
-from app.domain.exemplos import carregar_exemplos  # noqa: E402
+from app.domain.exemplos import FONTE_EXEMPLO, carregar_exemplos  # noqa: E402
 from app.domain.ingestao import receber_varios  # noqa: E402
 from app.interface.apresentacao import (  # noqa: E402
     TEXTO_AUSENTE,
@@ -66,6 +66,7 @@ from app.interface.apresentacao import (  # noqa: E402
     montar_kpis,
     nome_arquivo_csv,
     resumir_apolice,
+    SITUACOES_NO_FILTRO,
     usando_exemplos,
 )
 from app.schemas import ApoliceExtraida, DocumentoExtraido  # noqa: E402
@@ -116,13 +117,17 @@ def dicionario_do_especialista() -> DicionarioCampos:
     return carregar_campos()
 
 
-@st.cache_data(show_spinner="Renderizando a página do PDF...")
+@st.cache_data(show_spinner="Renderizando a página do PDF...", max_entries=40)
 def pagina_em_imagem(caminho: str, numero: int, escala: float = 1.7):
     """Renderiza uma página do PDF, para a conferência visual do D.3.
 
     Sem OCR: aqui o PDF já é nativo, e o que se quer é ver a página como ela é.
     Devolve `None` quando não dá para renderizar — uma página ilegível não pode
     derrubar a comparação inteira.
+
+    O limite de 40 páginas em cache é deliberado: cada render em 300 dpi ocupa
+    alguns megabytes, e sem teto a memória cresceria a cada campo aberto durante
+    uma apresentação longa.
     """
     import pypdfium2 as pdfium
 
@@ -160,18 +165,43 @@ def documentos_por_apolice(apolices: list[ApoliceExtraida]) -> dict[str, Path | 
     return {a.nome: caminho_do_documento(a.documento) for a in apolices}
 
 
-def semear_exemplos(banco: Banco, forcar: bool = False) -> int:
-    """Coloca as extrações de exemplo no banco, uma vez.
+def semear_exemplos(banco: Banco, forcar: bool = False) -> tuple[int, int]:
+    """Coloca as extrações de exemplo no banco.
 
-    Só grava o que ainda não está lá: se a extração real (frente B) já processou
-    a mesma apólice, a demonstração não pode sobrescrevê-la em silêncio.
+    Devolve `(gravadas, preservadas)`. `preservadas` conta as apólices que já
+    estavam no banco com extração de verdade — a demonstração **nunca** passa por
+    cima de dado real, nem quando alguém manda recarregar os exemplos. Sem essa
+    trava, o primeiro clique depois de a frente B entrar apagaria a extração real
+    e a comparação voltaria a mostrar dado fabricado, em silêncio.
     """
     gravadas = 0
+    preservadas = 0
+
     for apolice in carregar_exemplos():
-        if forcar or not banco.tem(apolice.documento):
+        existente = banco.carregar(apolice.documento)
+
+        if existente is None:
             banco.salvar(apolice)
             gravadas += 1
-    return gravadas
+            continue
+
+        if (existente.modelo_usado or "") != FONTE_EXEMPLO:
+            preservadas += 1
+            continue
+
+        if forcar:
+            banco.salvar(apolice)
+            gravadas += 1
+
+    return gravadas, preservadas
+
+
+def aviso_de_preservadas(preservadas: int) -> str:
+    """O que dizer quando a demonstração deixou uma extração real em paz."""
+    return (
+        f"{preservadas} apólice(s) **não** foram sobrescritas: no banco há extração "
+        "de verdade e a demonstração não passa por cima dela."
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -319,11 +349,7 @@ def barra_lateral(
 
     Devolve `(documentos selecionados, incluir iguais, situações escolhidas)`.
     """
-    por_rotulo = {estilo(v).rotulo: v for v in Veredito}
-    padrao = [
-        por_rotulo[estilo(v).rotulo]
-        for v in (Veredito.AUSENTE_EM_ALGUMA, Veredito.DIFERENTE, Veredito.REDACAO_DIVERGENTE)
-    ]
+    por_rotulo = {estilo(v).rotulo: v for v in SITUACOES_NO_FILTRO}
 
     with st.sidebar:
         st.markdown("### 🛡️ Comparador D&O")
@@ -358,24 +384,28 @@ def barra_lateral(
         incluir_iguais = st.toggle(
             "Incluir o que é igual nas duas",
             value=False,
-            help="Por padrão a tela mostra só o que distingue as apólices. Ligar "
-                 "esta opção acrescenta os campos idênticos, que são contexto, "
-                 "não notícia.",
+            help="Por padrão a tela mostra só o que distingue as apólices: ausente "
+                 "em uma delas, valores diferentes e redação divergente. Ligar "
+                 "esta opção acrescenta também o que é igual nas duas e o que está "
+                 "fora das duas.",
         )
         escolhidos = st.multiselect(
             "Situações a exibir",
             options=list(por_rotulo),
-            default=[estilo(v).rotulo for v in padrao],
+            default=list(por_rotulo),
             format_func=lambda r: f"{estilo(por_rotulo[r]).icone} {r}",
             help="Os rótulos são a tradução dos vereditos do motor de comparação "
-                 "para a linguagem de quem contrata o seguro.",
+                 "para a linguagem de quem contrata o seguro. O que é igual nas duas "
+                 "entra pelo botão acima, nunca por este filtro.",
         )
         situacoes = {por_rotulo[r] for r in escolhidos}
 
         st.divider()
         if st.button("Recarregar as extrações de exemplo", icon="🧪", width="stretch"):
-            gravadas = semear_exemplos(banco, forcar=True)
+            gravadas, preservadas = semear_exemplos(banco, forcar=True)
             st.toast(f"{gravadas} apólice(s) de exemplo regravadas no banco")
+            if preservadas:
+                st.warning(aviso_de_preservadas(preservadas), icon="🔒")
 
         st.caption(
             f"{len(itens)} apólice(s) no banco · dicionário de {len(dic)} campos, "
@@ -433,7 +463,9 @@ def estado_inicial() -> None:
 
     if st.button("Carregar as duas apólices de exemplo", type="primary", icon="🧪"):
         banco = banco_do_projeto()
-        semear_exemplos(banco, forcar=True)
+        _, preservadas = semear_exemplos(banco, forcar=True)
+        if preservadas:
+            st.warning(aviso_de_preservadas(preservadas), icon="🔒")
         st.session_state["selecao"] = [i["documento"] for i in banco.listar()][:2]
         st.toast("Apólices de exemplo carregadas")
         st.rerun()
@@ -464,7 +496,11 @@ def aba_comparacao(
     )
 
     cartoes = montar_cartoes(comparacao, apolices, apenas_relevantes=not incluir_iguais)
-    cartoes = tuple(c for c in cartoes if c.veredito in situacoes)
+    if incluir_iguais:
+        permitidos = set(situacoes) | {Veredito.IGUAL, Veredito.AUSENTE_EM_TODAS}
+        cartoes = tuple(c for c in cartoes if c.veredito in permitidos)
+    else:
+        cartoes = tuple(c for c in cartoes if c.veredito in situacoes)
 
     with st.expander("Como ler os rótulos"):
         for est in legenda():
@@ -781,12 +817,20 @@ def _processar(arquivos: list, extrator, banco: Banco) -> None:
         for documento in documentos:
             try:
                 apolice = extrator(documento)
+                ja_existia = banco.tem(apolice.documento)
                 banco.salvar(apolice)
                 guardadas += 1
-                st.success(
-                    f"**{documento.nome_arquivo}**: {apolice.encontrados} campos "
-                    "extraídos e guardados no banco."
-                )
+                if ja_existia:
+                    st.warning(
+                        f"**{documento.nome_arquivo}**: substituiu a extração que já "
+                        "estava no banco. O banco guarda uma versão por documento — a "
+                        "última extração é a que vale."
+                    )
+                else:
+                    st.success(
+                        f"**{documento.nome_arquivo}**: {apolice.encontrados} campos "
+                        "extraídos e guardados no banco."
+                    )
             except Exception as exc:  # noqa: BLE001 — uma falha não derruba o lote (A.4)
                 st.error(f"**{documento.nome_arquivo}**: a extração falhou — {exc}")
 
@@ -795,6 +839,7 @@ def _processar(arquivos: list, extrator, banco: Banco) -> None:
             "A apólice guardada entra na comparação: escolha-a na barra lateral.",
             icon="👈",
         )
+
 
 # ---------------------------------------------------------------------------
 # Aplicação
