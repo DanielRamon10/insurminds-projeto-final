@@ -498,6 +498,149 @@ def test_recarregar_exemplos_regrava_apenas_apolice_de_exemplo():
 
 
 # ---------------------------------------------------------------------------
+# O visual — a folha de estilo não pode roubar a fonte dos ícones
+# ---------------------------------------------------------------------------
+
+#: Os spans com que o Streamlit desenha um ícone na tela.
+#:
+#: Medido no Chrome, com o Streamlit 1.64: o componente `DynamicIcon` é um
+#: `styled("span")` do emotion, então o elemento chega ao DOM com a classe
+#: `st-emotion-cache-<hash>` e o texto dentro dele é o *nome* do ícone
+#: (`expand_more`, `keyboard_arrow_right`). O desenho não vem do texto: vem da
+#: fonte "Material Symbols Rounded", que converte esse nome em glifo por
+#: **ligadura** (`font-feature-settings: liga`). Emoji é span irmão, com outra
+#: fonte, e nenhum dos dois é texto para a folha de estilo formatar.
+ICONES = (
+    {
+        "tag": "span",
+        "class": "st-emotion-cache-1dkvzay e1vmumty0",
+        "data-testid": "stIconMaterial",
+    },
+    {"tag": "span", "class": "st-emotion-cache-1a2b3c", "data-testid": "stIconEmoji"},
+)
+
+#: As formas de seletor que esta folha escreve para definir fonte.
+_PARTES = re.compile(
+    r"""
+      (?P<tag>^[a-zA-Z][\w-]*)
+    | \.(?P<classe>[\w-]+)
+    | \[(?P<atributo>[\w-]+)(?P<operador>[~|^$*]?=)\s*"(?P<valor>[^"]*)"\]
+    | :not\(\[(?P<negado>[\w-]+)\s*=\s*"(?P<negado_valor>[^"]*)"\]\)
+    """,
+    re.VERBOSE,
+)
+
+
+def _folha_de_estilo() -> str:
+    return (RAIZ / "app" / "interface" / "estilo.css").read_text(encoding="utf-8")
+
+
+def _regras(css: str) -> list[tuple[str, str]]:
+    """Cada `(seletor, corpo)` da folha, com comentários e `@import` fora.
+
+    O `@import` precisa sair antes: ele não tem chaves, então o parser colaria a
+    primeira regra da folha no mesmo pedaço de texto e descartaria as duas —
+    foi assim que este teste quase nasceu cego, deixando de examinar justamente
+    a regra que impõe a fonte do texto.
+    """
+    limpo = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
+    limpo = re.sub(r"@import[^;]+;", "", limpo)
+    return [
+        (seletor.strip(), corpo)
+        for seletor, corpo in re.findall(r"([^{}]+)\{([^{}]*)\}", limpo)
+        if not seletor.strip().startswith("@")
+    ]
+
+
+def _casa(seletor: str, elemento: dict[str, str]) -> bool | None:
+    """Se o seletor alcança o elemento — `None` quando este teste não sabe dizer.
+
+    Entende o que a folha escreve para definir fonte: tag, `.classe`,
+    `[atributo operador "valor"]` e `:not([atributo="valor"])`. Seletor com
+    combinador (`.hero h1`) devolve `None` de propósito: nenhuma regra de fonte
+    da folha é escrita assim, e fingir que sei ler isso seria pior do que
+    admitir que não sei — o teste reprova o que ele entende e não opina sobre o
+    resto, em vez de passar por omissão.
+    """
+    if any(caractere in seletor for caractere in " >+~"):
+        return None
+
+    casou = False
+    posicao = 0
+    for parte in _PARTES.finditer(seletor):
+        if seletor[posicao:parte.start()].strip():
+            return None
+        posicao = parte.end()
+
+        if parte.group("tag"):
+            casou = elemento.get("tag") == parte.group("tag")
+        elif parte.group("classe"):
+            casou = parte.group("classe") in elemento.get("class", "").split()
+        elif parte.group("atributo"):
+            valor = elemento.get(parte.group("atributo"), "")
+            alvo = parte.group("valor")
+            casou = {
+                "=": valor == alvo,
+                "*=": alvo in valor,
+                "^=": valor.startswith(alvo),
+                "$=": valor.endswith(alvo),
+                "~=": alvo in valor.split(),
+            }[parte.group("operador")]
+        else:
+            casou = elemento.get(parte.group("negado")) != parte.group("negado_valor")
+
+        if not casou:
+            return False
+
+    if seletor[posicao:].strip():
+        return None
+    return casou
+
+
+def test_a_fonte_do_texto_nao_alcanca_os_icones():
+    """Regressão do "De expand_more": a ligadura do ícone depende da fonte.
+
+    O `font-family` da folha era dirigido a `[class*="st-"]`, que alcança todo
+    elemento do Streamlit — inclusive o span do ícone, cuja classe é
+    `st-emotion-cache-*`. Com a fonte trocada por Inter, a ligadura não
+    acontece e o navegador escreve o nome do ícone por extenso, transbordando
+    sobre o rótulo do botão, porque a largura do span é fixa (16px). Medido no
+    Chrome antes da correção: 21 ícones na página, todos com `font-family:
+    Inter` em vez de "Material Symbols Rounded".
+    """
+    regras = _regras(_folha_de_estilo())
+
+    for icone in ICONES:
+        culpadas = [
+            seletor
+            for seletor, corpo in regras
+            if "font-family" in corpo
+            and "Material Symbols Rounded" not in corpo
+            and any(_casa(s.strip(), icone) for s in seletor.split(","))
+        ]
+        assert not culpadas, (
+            f"a regra de fonte do texto alcança o ícone {icone['data-testid']} "
+            f"e apaga a ligadura: {'; '.join(culpadas)}"
+        )
+
+
+def test_a_fonte_do_icone_material_e_restaurada():
+    """O cinto de segurança: existe regra devolvendo a fonte ao ícone.
+
+    Se outra regra da folha (ou uma versão futura do Streamlit) alcançar o
+    span, esta é quem devolve o desenho — e é o que este teste guarda.
+    """
+    resgates = [
+        seletor
+        for seletor, corpo in _regras(_folha_de_estilo())
+        if "Material Symbols Rounded" in corpo
+        and any(_casa(s.strip(), ICONES[0]) for s in seletor.split(","))
+    ]
+    assert resgates, "nada devolve 'Material Symbols Rounded' ao span do ícone"
+
+
+
+# ---------------------------------------------------------------------------
 # A aplicação inteira, executada de verdade
 # ---------------------------------------------------------------------------
 

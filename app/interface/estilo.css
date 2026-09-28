@@ -7,7 +7,9 @@
  *   2. componentes nativos para o que é interativo (`st.badge`, `st.popover`,
  *      `st.metric`, `st.dataframe`) — nada de reinventar botão em HTML;
  *   3. este arquivo só para o que o Streamlit não tem: o cabeçalho, os cartões
- *      de valor, a citação do trecho de origem e os selos de veredito.
+ *      de valor, a citação do trecho de origem, os selos de veredito e os
+ *      consertos de texto que o Streamlit corta ou escreve errado (o rótulo do
+ *      KPI que saía "Campos compara…", a fonte dos ícones).
  *
  * A regra que evitou retrabalho: nada aqui depende de estrutura interna do
  * Streamlit além de `stVerticalBlockBorderWrapper`, que é o contêiner de
@@ -17,8 +19,39 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
-html, body, [class*="st-"], button, input, textarea, select {
+/* A fonte do texto — e a armadilha que existe aqui.
+ *
+ * `[class*="st-"]` alcança quase todo elemento do Streamlit, porque as classes
+ * geradas pelo emotion começam com `st-emotion-cache-`. O ícone também é um
+ * span do Streamlit, e o DESENHO dele depende da fonte:
+ *
+ *   DynamicIcon            styled("span")({ fontFamily: theme.iconFont,
+ *                                          fontFeatureSettings: "liga" })
+ *   theme.iconFont         "Material Symbols Rounded"
+ *
+ * Ou seja: o nome do ícone (`expand_more`, `keyboard_arrow_right`) é o texto
+ * que a fonte converte em desenho por ligadura. Se o `font-family` daqui
+ * alcança esse span, a ligadura não acontece e o navegador pinta o nome por
+ * extenso — e como o span tem largura fixa (`16px`), o nome transborda em cima
+ * do rótulo do botão. Era o "De expand_more" na tela.
+ *
+ * Medido no Chrome, com a regra anterior: 21 ícones na página, todos com
+ * `font-family` computado `Inter` em vez de `Material Symbols Rounded`.
+ *
+ * Duas defesas, porque este erro é silencioso: a regra de texto exclui os
+ * ícones (pelo `data-testid` que o Streamlit dá a eles — emoji entra junto,
+ * porque emoji também não é texto e não deve herdar fonte de texto), e logo
+ * abaixo há um cinto de segurança que devolve a fonte do ícone caso alguma
+ * outra regra alcance o span.
+ */
+html, body, button, input, textarea, select,
+[class*="st-"]:not([data-testid="stIconMaterial"]):not([data-testid="stIconEmoji"]) {
     font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important;
+}
+
+[data-testid="stIconMaterial"] {
+    font-family: 'Material Symbols Rounded' !important;
+    font-feature-settings: 'liga' !important;
 }
 
 .stApp {
@@ -186,6 +219,49 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     font-weight: 500;
     color: #64748B;
     font-size: .9rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Onde o Streamlit corta texto — uma correção e uma recusa, ambas medidas
+   -------------------------------------------------------------------------- */
+
+/* A tag do multiselect esconde parte do rótulo — e isso ficou de propósito.
+ *
+ * O medido: a barra lateral dá 240px de conteúdo, o container da tag fica com
+ * 182px e o rótulo recebe 130px, depois do botão de remover. "AIG Seguros
+ * Brasil S.A. — 9/15 campos" precisa de 260px e aparece como "AIG Seguros
+ * Bras…". Não é teto de `max-width`: nenhuma regra de largura casa com o
+ * elemento (e `[data-baseweb="tag"]` deixou de existir no Streamlit 1.64, que
+ * trocou o BaseWeb pelo react-aria — a tentativa óbvia de mexer em `max-width`
+ * não alcançava elemento nenhum). É falta de espaço mesmo.
+ *
+ * A tentativa de deixar o rótulo quebrar linha foi pior e está registrada aqui
+ * para não ser repetida: a tag tem altura fixa, então a linha extra extravasa e
+ * o texto de uma tag passa por cima do da tag seguinte — o defeito de texto
+ * sobreposto que esta frente veio justamente consertar. Reticências que escondem
+ * o fim do rótulo são menos ruins do que duas frases se atropelando.
+ *
+ * Para o nome inteiro caber na barra lateral o caminho é espaço, não CSS de
+ * emergência: alargar `[data-testid="stSidebar"]` é decisão de layout, mexe no
+ * recolhimento lateral e vale uma olhada em tela antes de entrar.
+ */
+
+/* O rótulo do KPI é escrito numa linha só com reticências, e os cinco números
+ * do topo apareciam cortados: "Campos compara…", "Ausentes em u…", "Valores
+ * diferent…". Cortar a palavra que diz o que o número conta é pior do que
+ * deixar a linha quebrar em duas — o cartão do KPI cresce alguns pixels e o
+ * leitor continua sabendo o que está lendo. Aqui a quebra é segura, ao
+ * contrário da tag: o rótulo do KPI tem altura automática (`min-height` de uma
+ * linha), então o texto cresce para baixo sem encostar em ninguém. Medido no
+ * Chrome depois da correção: os 5 rótulos inteiros, 34px de altura, e nenhum
+ * texto sobreposto na página. Restam cortados apenas os rótulos das tags da
+ * barra lateral, pelo motivo registrado acima. */
+[data-testid="stMetricLabel"],
+[data-testid="stMetricLabel"] > div,
+[data-testid="stMetricLabel"] p {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
 }
 
 .apolice-nome {
