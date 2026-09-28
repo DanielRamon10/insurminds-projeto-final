@@ -97,22 +97,45 @@ def frente_a() -> None:
     print(f"\n  {len(documentos)} documento(s) em {duracao:.1f}s, sem gastar um token")
 
 
-def extracao_e_banco() -> Banco:
-    """As extrações de exemplo no banco — o que a frente B vai substituir."""
-    passo(2, "FRENTE B — campos estruturados (hoje: extrações de exemplo)")
-    print(f"  fonte dos campos: {FONTE_EXEMPLO}")
-    print("  a extração real com LLM ainda está sendo escrita; estes valores foram")
-    print("  escritos à mão para a interface e a demonstração não ficarem paradas.")
+def extracao_e_banco() -> tuple[Banco, bool]:
+    """A apólice que está no banco, com a procedência declarada.
 
-    banco = Banco(":memory:")
-    for apolice in carregar_exemplos():
-        banco.salvar(apolice)
+    Preferimos o que a frente B gravou de verdade: o script existe para o vídeo
+    mostrar o sistema funcionando, e mostrar campo escrito à mão seria
+    exatamente a demonstração que a entrega diz não ser. Quando o banco ainda
+    tem só exemplo — alguém abre o projeto pela primeira vez — o avisa, porque
+    a diferença precisa ser dita em voz alta, não escondida.
+
+    Devolve o banco e se os campos vieram de extração real.
+    """
+    passo(2, "FRENTE B — campos estruturados")
+
+    banco = Banco()
+    registros = banco.listar()
+    reais = [r for r in registros if (r["modelo_usado"] or "") != FONTE_EXEMPLO]
+
+    if reais:
+        fonte = reais[0]["modelo_usado"]
+        print(f"  fonte dos campos: {fonte} — extracao real, conferida contra o PDF")
+        print("  cada valor abaixo tem pagina e trecho de origem (B.3), e o que nao")
+        print("  consta no documento aparece como null, nunca preenchido (B.4).")
+    else:
+        for apolice in carregar_exemplos():
+            banco.salvar(apolice)
+        print(f"  fonte dos campos: {FONTE_EXEMPLO}")
+        print("  AVISO: o banco nao tem extracao real. Grave antes com")
+        print("      python -m scripts.demo_extracao")
+        print("      python -m scripts.carregar_extracoes")
+        print("  ate la, os valores abaixo foram escritos a mao e NAO sao saida do sistema.")
 
     passo(3, "FRENTE C — armazenamento e comparação (determinístico, sem LLM)")
-    print("  guardadas e recuperadas do SQLite em memória:")
+    print(f"  lidas do SQLite em {banco.caminho}:")
     for linha in banco.listar():
-        print(f"    {linha['seguradora']:8} {linha['encontrados']}/{linha['total_campos']} campos")
-    return banco
+        print(
+            f"    {linha['seguradora']:8} {linha['encontrados']}/{linha['total_campos']} "
+            f"campos  ({linha['modelo_usado']})"
+        )
+    return banco, bool(reais)
 
 
 def comparacao(banco: Banco) -> None:
@@ -171,7 +194,7 @@ def main() -> int:
     else:
         print("\n  (ingestao pulada por --rapido)")
 
-    banco = extracao_e_banco()
+    banco, com_extracao_real = extracao_e_banco()
     try:
         comparacao(banco)
     finally:
@@ -180,8 +203,10 @@ def main() -> int:
     titulo("o que acabou de rodar")
     print("  real .....: ingestao dos PDFs, banco SQLite, motor de comparacao,")
     print("             rastreabilidade (pagina e trecho de cada valor)")
-    print("  exemplo ..: os campos extraidos, à espera da frente B (LLM)")
-    print("  nenhuma chamada de modelo de linguagem foi feita nesta demonstracao.")
+    fonte = "extracao real com LLM (frente B), conferida contra o PDF" if com_extracao_real else FONTE_EXEMPLO
+    print(f"  campos ...: {fonte}")
+    print("  nenhuma chamada de modelo de linguagem foi feita nesta demonstracao:")
+    print("             a extracao ja estava gravada, e o motor de comparacao nao usa LLM.")
     return 0
 
 
