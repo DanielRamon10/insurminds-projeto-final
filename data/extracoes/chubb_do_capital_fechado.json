@@ -1,0 +1,156 @@
+{
+  "documento": "chubb_do_capital_fechado.pdf",
+  "seguradora": "Chubb",
+  "campos": [
+    {
+      "campo_id": "limite_maximo_indenizacao",
+      "valor": null,
+      "trecho_origem": null,
+      "pagina": null,
+      "paginas_possiveis": [],
+      "observacao": "O valor específico é definido na Especificação da Apólice.; citacao nao encontrada no documento (\"O Limite Máximo de Indenização é o limite total da responsabilidade da ...\")"
+    },
+    {
+      "campo_id": "franquia",
+      "valor": null,
+      "trecho_origem": "Franquia: Valor ou percentual definido na Especificação da Apólice, referente à responsabilidade do Segurado nos prejuízos indenizáveis decorrentes de Sinistros cobertos. É dedutível do valor a ser pago pela Seguradora em caso de Sinistro coberto.",
+      "pagina": 8,
+      "paginas_possiveis": [
+        8
+      ],
+      "observacao": "O valor específico é definido na Especificação da Apólice."
+    },
+    {
+      "campo_id": "vigencia",
+      "valor": null,
+      "trecho_origem": "Vigência: É o intervalo ininterrupto de tempo, com início e fim, durante o qual está em vigor o contrato de seguro, indicado na Especificação.",
+      "pagina": 10,
+      "paginas_possiveis": [
+        10
+      ],
+      "observacao": "O período de vigência é indicado na Especificação da Apólice."
+    },
+    {
+      "campo_id": "retroatividade",
+      "valor": null,
+      "trecho_origem": "Data Retroativa de Cobertura : Mediante acordo entre as partes, conforme descrito na Especificação da Apólice, será igual ou anterior à data de início de vigência da primeira de uma série sucessiva e ininterrupta de Apólices",
+      "pagina": 7,
+      "paginas_possiveis": [
+        7
+      ],
+      "observacao": "A data é definida mediante acordo entre as partes na Especificação da Apólice."
+    },
+    {
+      "campo_id": "prazo_complementar",
+      "valor": "36 meses",
+      "trecho_origem": "Será concedido ao Segurado, sem qualquer ônus, um prazo adicional para a apresentação de reclamações por terceiros de até 36 (trinta e seis) meses, conforme vier descrito na Especificação da Apólice, a partir do término de vigência desta Apólice",
+      "pagina": 25,
+      "paginas_possiveis": [
+        25
+      ],
+      "observacao": null
+    },
+    {
+      "campo_id": "ambito_geografico",
+      "valor": "Mundial",
+      "trecho_origem": "O presente seguro abrangerá Reclamações feitas em qualquer parte do mundo, a não ser que indicado diferentemente na Especificação desta Apólice.",
+      "pagina": 15,
+      "paginas_possiveis": [
+        15
+      ],
+      "observacao": null
+    },
+    {
+      "campo_id": "definicao_segurado",
+      "valor": "Membros de órgãos estatutários, pessoas com poderes de representação e prestadores de serviços equiparáveis, incluindo o Tomador em casos de adiantamento de valores.",
+      "trecho_origem": "Segurado: É toda e qualquer pessoa física que tenha sido, seja ou venha a ser, conforme o caso: a) membro do conselho de administração, da diretoria, do conselho fiscal ou de qualquer outro órgão estatutário ou órgão criado pelo contrato ou estatuto social do Tomador do Seguro",
+      "pagina": 9,
+      "paginas_possiveis": [
+        9
+      ],
+      "observacao": null
+    },
+    {
+      "campo_id": "custos_defesa",
+      "valor": "Cobertos se contratada cobertura adicional específica",
+      "trecho_origem": "Para que haja o pagamento de despesas com Custos de Defesa , é obrigatória a contratação da cobertura adicional específica para custos de defesa.",
+      "pagina": 11,
+      "paginas_possiveis": [
+        11,
+        34
+      ],
+      "observacao": "Os custos de defesa são deduzidos do Limite Máximo de Indenização da cobertura adicional."
+    },
+    {
+      "campo_id": "multas_administrativas",
+      "valor": "Cobertas se contratada cobertura adicional específica",
+      "trecho_origem": "também se estenderá para garantir o pagamento de Multas e Penalidades cíveis e administrativas impostas ao Segurado em procedimentos administrativos originados em um Fato Gerador e que sejam conduzidos por órgãos estatais ou autogeridos de regulação e fiscalização",
+      "pagina": 49,
+      "paginas_possiveis": [
+        49
+      ],
+      "observacao": null
+    },
+    {
+      "campo_id": "exclusao_atos_dolosos",
+      "valor": "Excluídos se comprovados por sentença transitada em julgado ou confissão",
+      "trecho_origem": "Atos ilícitos dolosos ou por culpa grave equiparável ao dolo praticados pelo segurado, pelo beneficiário ou pelo representante, de um ou de outro, salvo se o dolo do representante do segurado ou do beneficiário, for em prejuízo desses.",
+      "pagina": 13,
+      "paginas_possiveis": [
+        13
+      ],
+      "observacao": null
+    },
+    {
+      "campo_id": "exclusao_ambiental",
+      "valor": "Excluídos, salvo se contratada cobertura adicional específica",
+      "trecho_origem": "Reclamações decorrentes e/ou relacionadas a Danos Ambientais, ainda que recaiam diretamente sobre o Segurado.",
+      "pagina": 14,
+      "paginas_possiveis": [
+        14
+      ],
+      "observacao": null
+    },
+    {
+      "campo_id": "clausula_rescisao",
+      "valor": "Por mútuo acordo ou iniciativa de qualquer parte",
+      "trecho_origem": "A rescisão total ou parcial do contrato poderá ser realizada a qualquer tempo, por iniciativa de quaisquer das partes contratantes, mas sempre com a concordância recíproca.",
+      "pagina": 22,
+      "paginas_possiveis": [
+        22
+      ],
+      "observacao": null
+    },
+    {
+      "campo_id": "definicao_reclamacao",
+      "valor": "Pedidos de indenização, processos judiciais, arbitrais, criminais ou administrativos",
+      "trecho_origem": "Reclamação: Diz respeito a: i) pedido de indenização pecuniária formulado contra qualquer Segurado; ii) processo judicial ou arbitral iniciado em qualquer foro ou tribunal arbitral contra qualquer Segurado; inquérito ou processo criminal ou qualquer procedimento semelhante iniciado contra o Segurado",
+      "pagina": 9,
+      "paginas_possiveis": [
+        9
+      ],
+      "observacao": null
+    },
+    {
+      "campo_id": "sublimites",
+      "valor": null,
+      "trecho_origem": "Cada uma das extensões de cobertura desta cláusula está condicionada à sua contratação expressamente prevista na Especificação da Apólice e limitada aos valores indicados na Especificação da Apólice como Limite Máximo de Indenização",
+      "pagina": 34,
+      "paginas_possiveis": [
+        34
+      ],
+      "observacao": "Os sublimites são estabelecidos na Especificação da Apólice.; valor definido na especificacao da apolice, fora deste documento"
+    },
+    {
+      "campo_id": "cobertura_investigacoes",
+      "valor": "Cobertas se contratada cobertura adicional específica",
+      "trecho_origem": "a Seguradora indenizará, em caso de investigação diretamente conduzida por órgão governamental contra o Segurado em virtude de qualquer Fato Gerador, os custos de defesa e despesas pertinentes à investigação, incorridas por ou em nome do Segurado",
+      "pagina": 46,
+      "paginas_possiveis": [
+        46
+      ],
+      "observacao": null
+    }
+  ],
+  "modelo_usado": "google/gemini-3.1-flash-lite"
+}
