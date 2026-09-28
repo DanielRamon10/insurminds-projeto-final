@@ -29,6 +29,7 @@ sistema destruiria o projeto na primeira pergunta da banca.
 from __future__ import annotations
 
 import html
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -43,7 +44,7 @@ import streamlit as st  # noqa: E402
 from app.clients.extracao import ocr_disponivel  # noqa: E402
 from app.config import APOLICES_DIR, EXTENSOES_IMAGEM, EXTENSOES_PDF  # noqa: E402
 from app.config import provedores_disponiveis  # noqa: E402
-from app.domain.armazenamento import Banco  # noqa: E402
+from app.domain.armazenamento import CAMINHO_PADRAO, Banco  # noqa: E402
 from app.domain.campos import DicionarioCampos, carregar_campos  # noqa: E402
 from app.domain.comparacao import Veredito, comparar  # noqa: E402
 from app.domain.exemplos import FONTE_EXEMPLO, carregar_exemplos  # noqa: E402
@@ -100,15 +101,32 @@ FUNDO_SITUACAO = {
 # ---------------------------------------------------------------------------
 
 
+def caminho_do_banco() -> Path:
+    """Onde a aplicação lê as apólices.
+
+    `INSURMINDS_DB` redireciona para outro arquivo. Existe para os testes: o
+    `data/apolices.db` está no `.gitignore`, então o conteúdo dele varia de
+    máquina para máquina — quem rodou a extração de verdade tem dado real, quem
+    não rodou tem exemplo. Um teste que dependesse desse arquivo passaria numa
+    máquina e falharia na outra, e a entrega aborta quando a suíte falha.
+    """
+    return Path(os.environ["INSURMINDS_DB"]) if os.environ.get("INSURMINDS_DB") else CAMINHO_PADRAO
+
+
 @st.cache_resource(show_spinner=False)
-def banco_do_projeto() -> Banco:
+def banco_do_projeto(caminho: str) -> Banco:
     """O banco de apólices processadas (C.1).
 
     `cache_resource` porque o banco é recurso compartilhado e não dado de
     entrada: a cada clique o Streamlit reexecuta este arquivo inteiro, e no modo
     em memória reabrir a conexão a cada rerun apagaria tudo.
+
+    O caminho entra no cache de propósito. Sem ele, a função não tem parâmetro
+    nenhum e o `cache_resource` devolveria sempre a **primeira** instance criada
+    no processo — uma tela aberta contra o banco de exemplo continuaria vendo o
+    exemplo mesmo depois de o teste apontar a aplicação para outro banco.
     """
-    return Banco()
+    return Banco(caminho)
 
 
 @st.cache_data(show_spinner=False)
@@ -462,7 +480,7 @@ def estado_inicial() -> None:
                 st.caption(texto)
 
     if st.button("Carregar as duas apólices de exemplo", type="primary", icon="🧪"):
-        banco = banco_do_projeto()
+        banco = banco_do_projeto(str(caminho_do_banco()))
         _, preservadas = semear_exemplos(banco, forcar=True)
         if preservadas:
             st.warning(aviso_de_preservadas(preservadas), icon="🔒")
@@ -855,7 +873,7 @@ def main() -> None:
     )
     st.markdown(f"<style>{CSS}</style>", unsafe_allow_html=True)
 
-    banco = banco_do_projeto()
+    banco = banco_do_projeto(str(caminho_do_banco()))
     dic = dicionario_do_especialista()
     semear_exemplos(banco)
     itens = banco.listar()

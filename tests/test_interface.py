@@ -11,6 +11,7 @@ barato e pega o erro que mais dói: a tela que só quebra quando alguém abre.
 
 from __future__ import annotations
 
+import os
 import re
 from pathlib import Path
 from types import SimpleNamespace
@@ -18,6 +19,7 @@ from types import SimpleNamespace
 import pytest
 
 from app.agents.llm import RespostaLLM
+from app.domain.armazenamento import Banco
 from app.domain.campos import carregar_campos
 from app.domain.comparacao import Veredito, comparar
 from app.domain.exemplos import FONTE_EXEMPLO, carregar_exemplos
@@ -500,9 +502,30 @@ def test_recarregar_exemplos_regrava_apenas_apolice_de_exemplo():
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture(scope="module")
-def tela():
-    """A aplicação executada uma vez, para os testes de conteúdo reusarem."""
+def _banco_temporario(apolices, diretorio) -> Path:
+    """Grava as apólices num `.db` descartável e devolve o caminho.
+
+    Sem isto, os testes de tela dependeriam do `data/apolices.db` de quem está
+    rodando — arquivo que está no `.gitignore` e cujo conteúdo depende de a
+    pessoa ter rodado a extração real ou não. A suíte precisa dar o mesmo
+    resultado em qualquer máquina, e a entrega aborta quando ela falha.
+    """
+    caminho = Path(diretorio) / "apolices_teste.db"
+    banco = Banco(caminho)
+    for apolice in apolices:
+        banco.salvar(apolice)
+    return caminho
+
+
+def _abrir_tela():
+    """Sobe a aplicação de verdade, no banco apontado por `INSURMINDS_DB`.
+
+    A variável precisa estar valendo **durante toda a vida do teste**, não só na
+    primeira execução: cada `.run()` reexecuta o script do Streamlit, que volta
+    a perguntar o caminho do banco. Se ela sumisse no meio do caminho, a tela
+    passaria a ler o `data/apolices.db` da máquina — exatamente a dependência de
+    estado local que estes testes existem para eliminar.
+    """
     streamlit_testing = pytest.importorskip("streamlit.testing.v1")
     from app.interface import app as interface
 
@@ -511,6 +534,23 @@ def tela():
     )
     at.run()
     return at
+
+
+@pytest.fixture
+def tela_de_exemplos(tmp_path, monkeypatch):
+    """A aplicação aberta contra um banco só com as extrações de exemplo."""
+    caminho = _banco_temporario(carregar_exemplos(), tmp_path)
+    monkeypatch.setenv("INSURMINDS_DB", str(caminho))
+    return _abrir_tela()
+
+
+@pytest.fixture(scope="module")
+def tela(tmp_path_factory, request):
+    """A aplicação com dado de exemplo, executada uma vez para os testes reusarem."""
+    caminho = _banco_temporario(carregar_exemplos(), tmp_path_factory.mktemp("tela"))
+    os.environ["INSURMINDS_DB"] = str(caminho)
+    request.addfinalizer(lambda: os.environ.pop("INSURMINDS_DB", None))
+    return _abrir_tela()
 
 
 def test_app_streamlit_sobe_sem_excecao(tela):
@@ -540,27 +580,52 @@ def test_a_tela_declara_que_a_comparacao_usa_exemplos(tela):
     assert "extrações de exemplo" in avisos
 
 
-def _nova_tela():
-    """Uma execução nova da aplicação, para os testes que clicam em controles."""
-    streamlit_testing = pytest.importorskip("streamlit.testing.v1")
-    from app.interface import app as interface
+def test_a_tela_nao_declara_exemplo_quando_o_banco_tem_extracao_real(
+    tmp_path, monkeypatch
+):
+    """O outro lado do mesmo compromisso: dado real não carrega o aviso de exemplo.
 
-    at = streamlit_testing.AppTest.from_file(
-        str(Path(interface.__file__)), default_timeout=90
+    O teste anterior prova que o exemplo é declarado. Este prova que a extração
+    de verdade não é tratada como se fosse exemplo — que é o que aconteceu
+    depois que a frente B entrou: com `extrair_apolice` publicado em
+    `app.agents`, o dado real passou a poder chegar ao banco, e o aviso de
+    "dado de exemplo" sobre a apólice errada seria o mesmo tipo de mentira que
+    o aviso evita.
+    """
+    pasta = Path(__file__).resolve().parent.parent / "data" / "extracoes"
+    arquivos = sorted(
+        p for p in pasta.glob("*.json") if not p.name.endswith(".resposta_llm.json")
     )
-    at.run()
+    if not arquivos:
+        pytest.skip("sem extração real gravada: rode python -m scripts.demo_extracao")
+
+    apolices = [
+        ApoliceExtraida.model_validate_json(p.read_text(encoding="utf-8"))
+        for p in arquivos
+    ]
+    caminho = _banco_temporario(apolices, tmp_path)
+    monkeypatch.setenv("INSURMINDS_DB", str(caminho))
+
+    at = _abrir_tela()
     assert not at.exception, [e.value for e in at.exception]
-    return at
+    avisos = "\n".join(w.value for w in at.warning)
+    assert "extrações de exemplo" not in avisos
 
 
-def test_toggle_incluir_iguais_acrescenta_os_campos_identicos():
+def _nova_tela(tela_pronta):
+    """Uma execução já aberta, para os testes que clicam em controles."""
+    assert not tela_pronta.exception, [e.value for e in tela_pronta.exception]
+    return tela_pronta
+
+
+def test_toggle_incluir_iguais_acrescenta_os_campos_identicos(tela_de_exemplos):
     """Regressão da auditoria da frente D: o botão ligava e nada mudava.
 
     O filtro de situações pedia os iguais e o próprio botão cortava de volta —
     duas alavancas brigando pela mesma coisa. Agora o botão é o único caminho
     para os iguais, e ligar ele tem de somar os 4 campos à lista.
     """
-    at = _nova_tela()
+    at = _nova_tela(tela_de_exemplos)
     antes = sum("Por que importa:" in m.value for m in at.markdown)
 
     at.toggle[0].set_value(True).run()
@@ -574,9 +639,9 @@ def test_toggle_incluir_iguais_acrescenta_os_campos_identicos():
     assert "Igual nas duas" in texto
 
 
-def test_filtro_vazio_esvazia_a_comparacao_e_volta():
+def test_filtro_vazio_esvazia_a_comparacao_e_volta(tela_de_exemplos):
     """Desligar todas as situações não pode quebrar a tela — nem deixá-la muda."""
-    at = _nova_tela()
+    at = _nova_tela(tela_de_exemplos)
     filtros = at.sidebar.multiselect[1]
     assert filtros.value, "o filtro deveria abrir com as 3 situações ligadas"
 
@@ -588,9 +653,9 @@ def test_filtro_vazio_esvazia_a_comparacao_e_volta():
     assert sum("Por que importa:" in m.value for m in at.markdown) == 11
 
 
-def test_uma_apolice_mostra_o_estado_inicial():
+def test_uma_apolice_mostra_o_estado_inicial(tela_de_exemplos):
     """Uma apólice só não é erro: é o estado antes de escolher a segunda."""
-    at = _nova_tela()
+    at = _nova_tela(tela_de_exemplos)
     seletor = at.sidebar.multiselect[0]
     seletor.set_value([seletor.options[0]]).run()
     assert not at.exception, [e.value for e in at.exception]
