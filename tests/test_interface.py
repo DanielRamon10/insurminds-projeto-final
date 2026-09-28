@@ -17,6 +17,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from app.agents.llm import RespostaLLM
 from app.domain.campos import carregar_campos
 from app.domain.comparacao import Veredito, comparar
 from app.domain.exemplos import FONTE_EXEMPLO, carregar_exemplos
@@ -41,7 +42,14 @@ from app.interface.apresentacao import (
     resumir_apolice,
     usando_exemplos,
 )
-from app.schemas import ApoliceExtraida, CampoExtraido
+from app.schemas import (
+    ApoliceExtraida,
+    CampoExtraido,
+    DocumentoExtraido,
+    OrigemTexto,
+    PaginaExtraida,
+    TipoArquivo,
+)
 
 DICIONARIO = carregar_campos()
 APOLICES = carregar_exemplos()
@@ -376,6 +384,50 @@ def test_aviso_da_extracao_pendente_diz_o_que_falta_e_o_que_ja_funciona():
     aviso = apresentacao.aviso_sem_extracao()
     assert "frente B" in aviso
     assert "ingestão" in aviso
+
+
+def test_ponte_encontra_a_extracao_real_publicada_pela_frente_b():
+    """O contrato entre as frentes é exercido, não só descrito.
+
+    A ponte foi combinada para a tela não precisar mudar quando a extração
+    entrasse — mas convênio no papel não impede `app.agents` de ficar vazio
+    depois do merge, que é exatamente o que aconteceu: a extração estava
+    entregue e a tela continuava anunciando que não existia. Aqui a ponte é
+    exercitada contra o módulo de verdade, sem rede, e a ausência quebra o
+    teste em vez de quebrar só quem abre a tela.
+    """
+    extrator = encontrar_extrator(carregar_modulo_extracao())
+    assert extrator is not None, "a frente B precisa publicar a extração em app.agents"
+
+
+def test_extrator_publicado_cumpre_o_contrato_da_interface():
+    """A interface usa só o que a extração devolve — e o tipo está no centro.
+
+    `apolice = extrator(documento)` seguido de `apolice.documento` e
+    `banco.salvar(apolice)`: se a função devolver o invólucro `Extracao` em vez
+    da `ApoliceExtraida`, isso quebra com `AttributeError` — tarde demais, e só
+    no momento em que alguém envia um arquivo.
+    """
+    extrator = encontrar_extrator(carregar_modulo_extracao())
+    documento = DocumentoExtraido(
+        nome_arquivo="exemplo.pdf",
+        tipo=TipoArquivo.PDF,
+        paginas=[PaginaExtraida(
+            numero=1,
+            texto="Contrato de seguro D&O.",
+            origem=OrigemTexto.PDF_NATIVO,
+        )],
+    )
+    apolice = extrator(
+        documento,
+        gerar=lambda prompt, json=False: RespostaLLM(
+            texto='{"seguradora": null, "campos": {}}',
+            provedor="teste", modelo="falso",
+        ),
+    )
+
+    assert isinstance(apolice, ApoliceExtraida)
+    assert apolice.documento == "exemplo.pdf"
 
 
 def test_rastreabilidade_nao_deixa_celula_vazia():
