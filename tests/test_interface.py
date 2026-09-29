@@ -11,6 +11,7 @@ barato e pega o erro que mais dói: a tela que só quebra quando alguém abre.
 
 from __future__ import annotations
 
+import ast
 import os
 import re
 from pathlib import Path
@@ -150,6 +151,118 @@ def test_pagina_de_origem_nao_e_inventada_quando_falta():
     assert not valor.ausente
     assert not valor.rastreavel
     assert valor.ancoragem == TEXTO_SEM_PAGINA
+
+
+# ---------------------------------------------------------------------------
+# A cláusula existe e o número está em outro documento
+#
+# É o caso real das condições gerais de D&O: franquia, LMI, vigência,
+# retroatividade e sublimites são definidos ali como "o valor indicado na
+# Especificação da Apólice", e é a especificação — não as condições gerais — que
+# traz o número. O extrator acha a cláusula, registra a página e a ressalva, e
+# devolve `valor=None` corretamente. A tela escrevia "não trata do assunto" nesses
+# cinco campos, afirmando o contrário do que o documento diz, e ainda descartava
+# a página e o trecho junto.
+# ---------------------------------------------------------------------------
+
+
+def _apolices_reais() -> list[ApoliceExtraida]:
+    """As extrações de verdade gravadas em `data/extracoes/`, se existirem."""
+    pasta = RAIZ / "data" / "extracoes"
+    arquivos = sorted(
+        p for p in pasta.glob("*.json") if not p.name.endswith(".resposta_llm.json")
+    )
+    if not arquivos:
+        pytest.skip("sem extração real gravada: rode python -m scripts.demo_extracao")
+    return [
+        ApoliceExtraida.model_validate_json(p.read_text(encoding="utf-8"))
+        for p in arquivos
+    ]
+
+
+def test_clausula_que_remete_o_valor_a_outro_documento_nao_e_ausencia():
+    """A correção: o documento trata do assunto — ele diz onde o valor está."""
+    campo = CampoExtraido(
+        campo_id="franquia",
+        valor=None,
+        trecho_origem="A importância definida na Especificação da Apólice, representada…",
+        pagina=8,
+        observacao="O valor é definido na Especificação da Apólice.",
+    )
+    valor = ValorNaTela(apolice="AIG", campo=campo)
+
+    assert valor.sem_valor_no_documento
+    assert not valor.ausente, "a apólice trata do assunto: a cláusula diz onde o valor está"
+    assert valor.texto == campo.observacao
+    assert valor.pagina == 8
+    assert valor.trecho == campo.trecho_origem, (
+        "a prova existe e não pode ser descartada — é o D.3, a tarefa que este "
+        "caminho estava esvaziando"
+    )
+
+
+def test_ressalva_sem_trecho_ainda_marca_valor_em_outro_documento():
+    """O caso da Chubb: a citação não foi localizada, mas a ressalva existe."""
+    campo = CampoExtraido(
+        campo_id="limite_maximo_indenizacao",
+        valor=None,
+        observacao="O valor específico é definido na Especificação da Apólice.",
+    )
+    valor = ValorNaTela(apolice="Chubb", campo=campo)
+    assert valor.sem_valor_no_documento
+    assert not valor.ausente
+    assert valor.texto == campo.observacao
+
+
+def test_campo_vazio_sem_prova_nenhuma_continua_sendo_ausencia():
+    """O outro lado: sem cláusula e sem ressalva, distinguir seria inventar.
+
+    É o caso das extrações de exemplo, e é o que impede esta correção de virar
+    uma desculpa universal para campo faltando.
+    """
+    valor = ValorNaTela(apolice="AIG", campo=CampoExtraido(campo_id="sublimites"))
+    assert valor.ausente
+    assert not valor.sem_valor_no_documento
+    assert valor.texto == TEXTO_AUSENTE
+
+
+def test_a_extracao_real_nao_e_lida_como_ausencia():
+    """O teste que teria pego o erro antes de ele chegar ao vídeo.
+
+    Percorre os campos das extrações reais que a apólice remete a outro documento
+    e exige que nenhum deles seja apresentado como "não trata do assunto".
+    """
+    remetem = [
+        campo
+        for apolice in _apolices_reais()
+        for campo in apolice.campos
+        if campo.valor is None and campo.observacao
+    ]
+    assert remetem, (
+        "esperava ao menos um campo remetido a outro documento; se a extração "
+        "mudou, este teste deixou de cobrir o caso para o qual existe"
+    )
+    for campo in remetem:
+        valor = ValorNaTela(apolice="?", campo=campo)
+        assert not valor.ausente, (
+            f"{campo.campo_id} saiu como ausência, mas a cláusula diz: {campo.observacao}"
+        )
+        assert valor.texto == campo.observacao
+
+
+def test_a_tabela_tambem_distingue_o_valor_que_esta_em_outro_documento():
+    """A tabela e o CSV usavam o mesmo texto errado do cartão."""
+    apolices = _apolices_reais()
+    comparacao = comparar(apolices, DICIONARIO)
+    _, linhas = matriz_comparativa(comparacao, apolices=apolices)
+
+    for rotulo in ("Limite Máximo de Indenização", "Franquia"):
+        linha = next(l for l in linhas if l["Campo"].startswith(rotulo))
+        for nome in comparacao.apolices:
+            assert linha[nome] != TEXTO_AUSENTE, (
+                f"{rotulo} / {nome} saiu como 'não trata do assunto', mas a apólice "
+                "remete o valor à Especificação da Apólice"
+            )
 
 
 def test_pagina_que_se_repete_no_documento_e_dita_como_aviso():
@@ -372,7 +485,13 @@ def test_ponte_acha_qualquer_nome_combinado_com_a_frente_b(nome):
 
 
 def test_ponte_devolve_none_quando_a_extracao_nao_existe():
-    """O estado de hoje: `app.agents` está vazio e a tela tem de dizer isso."""
+    """O caminho de exceção: sem função publicada, a tela tem de dizer isso.
+
+    `app.agents` publica `extrair_apolice` hoje, então este não é o estado do
+    repositório — é o estado de um ambiente onde a importação falhou. O que se
+    testa é que a ponte devolve `None` em vez de estourar, porque é isso que
+    permite à tela dizer "não está publicada" em vez de mostrar campo vazio.
+    """
     assert encontrar_extrator(SimpleNamespace()) is None
     assert encontrar_extrator(None) is None
     assert carregar_modulo_extracao("modulo.que.nao.existe") is None
@@ -542,9 +661,14 @@ def _regras(css: str) -> list[tuple[str, str]]:
     primeira regra da folha no mesmo pedaço de texto e descartaria as duas —
     foi assim que este teste quase nasceu cego, deixando de examinar justamente
     a regra que impõe a fonte do texto.
+
+    O corte é por linha, e não por `;`: a URL do Google Fonts tem ponto e vírgula
+    dentro da própria consulta (`wght@400;500;600;700;800`), então um
+    `[^;]+;` parava no primeiro deles e deixava o resto da linha colado no
+    seletor seguinte — de novo o mesmo cegamento, por outro caminho.
     """
     limpo = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
-    limpo = re.sub(r"@import[^;]+;", "", limpo)
+    limpo = re.sub(r"@import[^\n]*", "", limpo)
     return [
         (seletor.strip(), corpo)
         for seletor, corpo in re.findall(r"([^{}]+)\{([^{}]*)\}", limpo)
@@ -637,6 +761,146 @@ def test_a_fonte_do_icone_material_e_restaurada():
         and any(_casa(s.strip(), ICONES[0]) for s in seletor.split(","))
     ]
     assert resgates, "nada devolve 'Material Symbols Rounded' ao span do ícone"
+
+
+# ---------------------------------------------------------------------------
+# O visual — o cartão precisa de âncora estável para o CSS alcançá-lo
+# ---------------------------------------------------------------------------
+
+#: O container de cartão como o Streamlit 1.64 o entrega ao DOM.
+#:
+#: Medido no Chrome: `st.container(border=True, key="cartao-x")` rende um
+#: `div[data-testid="stVerticalBlock"]` que carrega, junto das classes de
+#: layout, a classe `st-key-cartao-x`. É por essa classe que a folha alcança o
+#: cartão. O `data-testid` que a folha usava antes
+#: (`stVerticalBlockBorderWrapper`) não existe mais no DOM do 1.64 — medido:
+#: zero elementos na página. A regra ficou morta e os cartões saíram com
+#: `background: rgba(0,0,0,0)`, `border-radius: 8px`, `box-shadow: none`.
+CONTAINER_CARTAO = {
+    "tag": "div",
+    "class": "stVerticalBlock st-key-cartao-redacao-divergente st-emotion-cache-1s3lgy2",
+    "data-testid": "stVerticalBlock",
+}
+
+
+def _containers_com_borda() -> list[ast.Call]:
+    """Todo `st.container(border=True, ...)` de `app.py`, como nó da AST.
+
+    A AST, e não uma expressão regular, porque o argumento pode ser uma
+    f-string (`key=f"cartao-{cartao.campo_id}"`) — e é justamente a parte
+    literal dessa f-string que este teste precisa ler.
+    """
+    codigo = (RAIZ / "app" / "interface" / "app.py").read_text(encoding="utf-8")
+    achados: list[ast.Call] = []
+    for no in ast.walk(ast.parse(codigo)):
+        if not isinstance(no, ast.Call):
+            continue
+        if not (isinstance(no.func, ast.Attribute) and no.func.attr == "container"):
+            continue
+        if any(
+            kw.arg == "border"
+            and isinstance(kw.value, ast.Constant)
+            and kw.value.value is True
+            for kw in no.keywords
+        ):
+            achados.append(no)
+    return achados
+
+
+def _chave_do_container(no: ast.Call) -> str | None:
+    """O `key=` do container; numa f-string, a parte literal que não varia."""
+    for kw in no.keywords:
+        if kw.arg != "key":
+            continue
+        if isinstance(kw.value, ast.Constant) and isinstance(kw.value.value, str):
+            return kw.value.value
+        if isinstance(kw.value, ast.JoinedStr) and kw.value.values:
+            cabeca = kw.value.values[0]
+            if isinstance(cabeca, ast.Constant) and isinstance(cabeca.value, str):
+                return cabeca.value
+    return None
+
+
+def _chave_da_classe(chave: str) -> str:
+    """A classe que o Streamlit gera para um `key=` de container.
+
+    É o sanitizador do próprio Streamlit (`"st-key-" + key`, com todo caractere
+    fora de `[A-Za-z0-9_-]` trocado por hífen). Reimplementado aqui para provar
+    que a chave escrita em `app.py` produz exatamente a classe que a folha
+    procura — sem isso, os dois lados do contrato passariam no teste separados
+    e falhariam juntos na tela.
+    """
+    return "st-key-" + re.sub(r"[^a-zA-Z0-9_-]", "-", chave.strip())
+
+
+def test_todo_cartao_tem_ancora_estavel():
+    """Sem `key=`, o cartão volta a sair sem fundo — e o CSS não avisa.
+
+    O container com borda é o único lugar do app onde a folha desenha
+    superfície (fundo, raio, sombra). A âncora tem de vir do `key=`, porque o
+    `data-testid` do Streamlit muda de versão para versão — foi exatamente o que
+    aconteceu entre a versão em que a folha foi escrita e a 1.64.
+    """
+    containers = _containers_com_borda()
+    assert len(containers) >= 3, (
+        "esperava ao menos os cartões de campo, de apólice e de aba; se algum "
+        "saiu do app, este teste deixou de cobrir o que devia"
+    )
+
+    sem_ancora = [
+        no.lineno
+        for no in containers
+        if not (chave := _chave_do_container(no)) or not chave.startswith("cartao")
+    ]
+    assert not sem_ancora, (
+        "container(border=True) sem `key=` começando por 'cartao', nas linhas "
+        f"{sem_ancora}: o CSS não alcança o cartão e ele sai sem fundo, sem raio "
+        "e sem sombra"
+    )
+
+
+def test_a_regra_do_cartao_alcanca_o_container_de_verdade():
+    """Regressão do cartão transparente: a regra tem de casar com o DOM real.
+
+    A regra antiga era `div[data-testid="stVerticalBlockBorderWrapper"]`. No
+    Streamlit 1.64 esse `data-testid` não existe, então a regra casava zero
+    elementos e o cartão que a frente D desenhou sumia da tela. Aqui a regra é
+    casada contra o container como ele é — e contra a classe que cada `key=`
+    escrito em `app.py` de fato produz.
+    """
+    desenham = [
+        seletor
+        for seletor, corpo in _regras(_folha_de_estilo())
+        if "border-radius: 18px" in corpo and "box-shadow" in corpo
+    ]
+    assert desenham, "a folha não tem mais a regra que desenha o cartão"
+
+    alcancam = [
+        seletor
+        for seletor in desenham
+        for parte in seletor.split(",")
+        if _casa(parte.strip(), CONTAINER_CARTAO)
+    ]
+    assert alcancam, (
+        "nenhuma regra de cartão alcança o container real "
+        f"(classe {CONTAINER_CARTAO['class']!r}); o cartão volta a sair sem fundo"
+    )
+
+    for chave in filter(None, (_chave_do_container(no) for no in _containers_com_borda())):
+        elemento = {
+            "tag": "div",
+            "class": f"stVerticalBlock {_chave_da_classe(chave)} st-emotion-cache-1s3lgy2",
+            "data-testid": "stVerticalBlock",
+        }
+        assert any(
+            _casa(parte.strip(), elemento)
+            for seletor in desenham
+            for parte in seletor.split(",")
+        ), (
+            f"o `key=\"{chave}\"` produz a classe {_chave_da_classe(chave)!r}, "
+            "que nenhuma regra de cartão alcança — a âncora e o seletor "
+            "divergiram"
+        )
 
 
 

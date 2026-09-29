@@ -56,26 +56,56 @@ citação de página — ficam todas em `apresentacao.py`, separadas do Streamli
 
 Isso tem três consequências práticas:
 
-1. os testes exercitam a apresentação sem subir a aplicação (38 testes, um deles
+1. os testes exercitam a apresentação sem subir a aplicação (54 testes, um deles
    sobe a tela de verdade com `AppTest`);
 2. o console (`demo_frente_d.py`) e a tela usam as **mesmas** regras: não é
    possível um dizer "ausente em uma delas" e o outro dizer outra coisa;
 3. trocar de framework de interface mais adiante não custa reescrever regra.
 
+## O visual — onde a folha de estilo se ancora
+
+`estilo.css` é o único lugar do projeto que depende do HTML que o Streamlit
+gera, então é o único que pode quebrar sem nenhum teste de Python perceber.
+
+A primeira versão ancorava os cartões em `div[data-testid="stVerticalBlockBorderWrapper"]`.
+No Streamlit 1.64 esse `data-testid` **não existe mais**: medido no Chrome, a
+regra casava zero elementos e os cartões saíam com `background: rgba(0,0,0,0)`,
+`border-radius: 8px` e `box-shadow: none` — sem fundo, sem raio e sem sombra, e
+sem nenhum aviso. A âncora agora é `[class*="st-key-cartao"]`, a classe que o
+próprio Streamlit gera a partir do `key=` do container e que é documentada como
+API pública ("CSS class name prefixed with `st-key-`"). Por isso todo
+`st.container(border=True)` de `app.py` carrega um `key="cartao-..."`:
+sem o `key`, não há classe, e o cartão volta a sair transparente.
+`tests/test_interface.py` guarda as duas pontas — a chave em `app.py` e a regra
+que precisa alcançá-la.
+
+O outro ajuste da mesma família: as colunas de um cartão crescem independentes,
+então o valor de duas linhas empurrava o rodapé 21px abaixo do vizinho (medido:
+AIG 65px contra Chubb 44px). `.valor` e `.valor-ausente` passaram a ter
+`min-height: 66px` — duas linhas. Um valor de três linhas ainda fica mais alto
+que um de duas; igualar isso exigiria encadear `display: flex` em containers
+internos do Streamlit, que é exatamente a dependência que deixou a regra do
+cartão morta. Não vale o risco por 1 cartão em 9.
+
 ## Contrato com a frente B (extração com LLM)
 
-A extração das cláusulas ainda não está pronta. A interface foi escrita para
-funcionar **antes** dela e para não precisar mudar **depois** dela:
+A extração das cláusulas **já está publicada**: `extrair_apolice`, em
+`app.agents`, é a função que a frente D consome — e o contrato escrito antes
+dela valeu, porque a interface passou a usá-la sem uma linha alterada. O que
+ainda depende do ambiente é a **chave de modelo**: sem `GOOGLE_API_KEY`,
+`GROQ_API_KEY` ou `OPENROUTER_API_KEY` no `.env`, a extração não roda.
 
 * `apresentacao.encontrar_extrator(modulo)` procura, em `app.agents`, uma função
   com um destes nomes: `extrair_apolice`, `extrair_apolices`, `extrair`,
-  `extrair_campos`. Ela deve receber um `DocumentoExtraido` e devolver uma
+  `extrair_campos`. Ela recebe um `DocumentoExtraido` e devolve uma
   `ApoliceExtraida` (ver `app/schemas.py`);
-* **enquanto não existir**, a tela diz que a extração está em desenvolvimento e
-  não mostra campo vazio como se a apólice não tratasse do assunto — seria a
-  mentira mais cara possível neste projeto;
-* **quando existir**, o upload passa a gravar as extrações no banco e a
-  comparação usa os dados reais, sem uma linha de interface alterada.
+* a aba de envio tem **três** estados, e não dois: extração ausente (a frente B
+  não publicou), extração publicada **sem chave configurada**, e extração
+  pronta. O estado do meio é o que importa — anunciar a extração com o `.env`
+  vazio é a mentira mais cara possível neste projeto: o documento entra, é lido,
+  e para. A tela diz isso com todas as letras;
+* com a chave configurada, o upload grava as extrações no banco e a comparação
+  usa os dados reais, sem uma linha de interface alterada.
 
 ## Sobre as extrações de exemplo
 
@@ -91,16 +121,38 @@ sistema — a tabela abaixo é o que é real e o que não é:
 | Banco SQLite (C.1) | sim |
 | Motor de comparação e vereditos (C.2, C.3) | sim |
 | Rastreabilidade por página e trecho | sim, sobre os valores que existem |
-| Valores dos campos extraídos | **não** — vêm de `exemplos.py`, à espera da frente B |
+| Valores dos campos extraídos | reais quando as extrações de `data/extracoes/` estão no banco (`python -m scripts.carregar_extracoes`); `exemplos.py` é o plano B, e cada tela onde ele aparece diz que é exemplo |
+
+## Um valor pode faltar por dois motivos
+
+`ValorNaTela` distingue três desfechos, e não dois:
+
+| Desfecho | Quando | O que a tela escreve |
+| --- | --- | --- |
+| valor encontrado | o extrator devolveu valor | o valor, com página e trecho |
+| valor em outro documento | não há valor, **mas** há ressalva do extrator ou trecho de origem | a ressalva do extrator — "— valor não está neste documento —" — e o botão *De onde veio* continua disponível |
+| ausência | não há valor, nem ressalva, nem trecho | "— não trata do assunto —" |
+
+O caso do meio é real e não é falha: as condições gerais de D&O definem LMI,
+franquia, vigência, retroatividade e sublimites como "o valor indicado na
+Especificação da Apólice", e é a especificação que traz o número. A extração acha
+a cláusula e cita a página. Antes desta distinção a tela escrevia "não trata do
+assunto" nesses cinco campos e **descartava a página e o trecho** — apagava o D.3
+justamente onde a cláusula remete a outro documento.
+
+Sem ressalva e sem trecho a distinção seria invenção, e aí a tela volta a dizer
+ausência: é o que impede a regra de virar desculpa para campo faltando. A matriz
+da aba *Tabela completa* e o CSV usam a mesma regra, por isso `matriz_comparativa`
+e `exportar_csv` recebem `apolices` — a diferença mora no `CampoExtraido`, e o
+motor devolve só o texto do valor.
 
 ## Pendências de integração com outras frentes
 
 Nada disto bloqueia a frente D, mas precisa acontecer antes da entrega:
 
-1. **`gerar_entrega.py` não empacota `.streamlit/`** — o script do Daniel tem uma
-   lista `INCLUIR` explícita e `.streamlit` ficou de fora. Sem o `config.toml`, o
-   tema se perde no ZIP (a interface continua funcionando, com a cara padrão do
-   Streamlit). Sugestão: acrescentar `".streamlit"` à lista.
+1. **`gerar_entrega.py` não empacotava `.streamlit/`** — *resolvido*:
+   `".streamlit"` entrou na lista `INCLUIR` do script. Sem o `config.toml` o tema
+   se perdia no ZIP e a interface abria com a cara padrão do Streamlit.
 2. **README, seção "Execução"** — o item E.1 é do Daniel. A linha da interface é
    `streamlit run app/interface/app.py` e a da demonstração é
    `python -m scripts.demo_frente_d`.
@@ -112,9 +164,18 @@ Nada disto bloqueia a frente D, mas precisa acontecer antes da entrega:
 
 ## O que ainda falta na frente D
 
-* os três prints da interface no slide de demonstração do deck (o slide já tem os
-  espaços marcados com o que recortar);
+* ~~os três prints da interface no slide de demonstração do deck~~ — *resolvido*:
+  os recortes estão em `Projeto_Final_Artefatos/prints/` e o `gerar_pitch.py` os
+  cola sozinho no slide 8, com a legenda embaixo de cada um. Sem os arquivos o
+  slide volta a desenhar a caixa com "print N — colar aqui", então um clone
+  recém-baixado não fica com um slide quebrado. As regiões de cada recorte e as
+  duas armadilhas da captura estão no fim de [`ROTEIRO_VIDEO.md`](ROTEIRO_VIDEO.md);
 * a gravação do vídeo — roteiro cronometrado em [`ROTEIRO_VIDEO.md`](ROTEIRO_VIDEO.md);
-* revisão do resultado com o grupo depois que a frente B entregar, para trocar os
-  números de exemplo pelos números da extração real (a tela e o deck se atualizam
-  sozinhos: o deck tem teste que confere os números contra o motor).
+* revisão do resultado com o grupo, agora com a frente B entregue, para trocar os
+  números de exemplo pelos números da extração real. A tela se atualiza sozinha
+  porque lê o banco; o deck **não** — `tests/test_pitch.py` ainda confere os
+  números do slide contra `exemplos.py`, então trocar o texto sem trocar o teste
+  deixa a suíte vermelha, e deixar os dois como estão mantém no slide números que
+  já não são os da extração real. Os três prints seguem a mesma regra: foram
+  recortados sobre as extrações de exemplo, e a tela mostra R$ 50.000 × R$ 80.000
+  de franquia — número que a extração real não produz.

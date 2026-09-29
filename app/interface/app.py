@@ -17,11 +17,16 @@ Duas decisões que valem explicação:
 quem lê o documento é a frente A. Aqui só se apresenta o que eles devolvem —
 era o erro que custou um PR de consolidação no Desafio 5 misturar as camadas.
 
-**A tela não finge.** A extração das cláusulas (frente B) ainda não existe, e a
-comparação da demonstração roda sobre as extrações de exemplo de
-`app/domain/exemplos.py`. Isso é dito em toda tela onde os dados aparecem, no
-rodapé e no cartão de cada apólice. Dado fabricado apresentado como saída do
-sistema destruiria o projeto na primeira pergunta da banca.
+**A tela não finge.** A extração das cláusulas existe — `extrair_apolice`, em
+`app.agents`. Nos documentos comparados, os cinco campos numéricos não têm valor:
+as condições gerais definem LMI, franquia, vigência, retroatividade e sublimites
+como "o valor indicado na Especificação da Apólice", e é a especificação que traz
+o número. A extração registra a cláusula, a página e o motivo, e a tela mostra
+essa ressalva em vez de dizer que a apólice não trata do assunto. Como não há
+número para comparar, a demonstração roda sobre as extrações de exemplo de
+`app/domain/exemplos.py`, dito em toda tela onde os dados aparecem, no rodapé e no
+cartão de cada apólice. Dado fabricado apresentado como saída do sistema
+destruiria o projeto na primeira pergunta da banca.
 
 `apresentacao.py` monta o que aparece; este arquivo desenha.
 """
@@ -261,7 +266,15 @@ def rodape() -> None:
 
 
 def _valor(valor: ValorNaTela, documentos: dict[str, Path | None]) -> None:
-    """Um valor, com a citação de origem e a prova documental quando pedida."""
+    """Um valor, com a citação de origem e a prova documental quando pedida.
+
+    São três desfechos, e não dois. Além do valor encontrado e do campo que a
+    apólice não trata, existe o caso das condições gerais de D&O: a cláusula
+    existe e diz que o número está na Especificação da Apólice. Aí a tela mostra
+    a ressalva do extrator e **continua oferecendo a prova** — antes ela escrevia
+    "não trata do assunto" e descartava a página e o trecho que a extração tinha
+    registrado, ou seja, perdia rastreabilidade justamente onde ela mais importa.
+    """
     st.markdown(
         f'<div class="valor-nome">{html.escape(valor.apolice)}</div>',
         unsafe_allow_html=True,
@@ -273,13 +286,17 @@ def _valor(valor: ValorNaTela, documentos: dict[str, Path | None]) -> None:
         )
         return
 
-    st.markdown(f'<div class="valor">{html.escape(valor.texto)}</div>', unsafe_allow_html=True)
+    classe = "valor-ausente" if valor.sem_valor_no_documento else "valor"
+    st.markdown(
+        f'<div class="{classe}">{html.escape(valor.texto)}</div>',
+        unsafe_allow_html=True,
+    )
     st.markdown(
         f'<div class="pagina">📄 {html.escape(valor.ancoragem)}</div>',
         unsafe_allow_html=True,
     )
 
-    if not valor.rastreavel:
+    if not valor.rastreavel and not valor.sem_valor_no_documento:
         st.caption("⚠️ valor localizado, mas sem trecho de origem registrado")
 
     if valor.trecho:
@@ -321,8 +338,12 @@ def _prova_de_origem(valor: ValorNaTela, caminho: Path | None) -> None:
 
 
 def _cartao(cartao: CartaoDiferenca, documentos: dict[str, Path | None]) -> None:
-    """Um campo, com o valor de cada apólice lado a lado (D.2 e D.3)."""
-    with st.container(border=True):
+    """Um campo, com o valor de cada apólice lado a lado (D.2 e D.3).
+
+    O `key` vira a classe `st-key-cartao-*` no HTML — é a âncora estável que
+    `estilo.css` usa para desenhar o cartão. Sem ela o CSS não alcança nada.
+    """
+    with st.container(border=True, key=f"cartao-{cartao.campo_id}"):
         titulo, selo = st.columns([4.2, 1.6], vertical_alignment="top")
         with titulo:
             st.markdown(
@@ -473,9 +494,11 @@ def estado_inicial() -> None:
             "🧭",
         ),
     ]
-    for coluna, (titulo, texto, icone) in zip(st.columns(3, gap="medium"), cartoes):
+    for indice, (coluna, (titulo, texto, icone)) in enumerate(
+        zip(st.columns(3, gap="medium"), cartoes)
+    ):
         with coluna:
-            with st.container(border=True):
+            with st.container(border=True, key=f"cartao-aba-{indice}"):
                 st.markdown(f"#### {icone} {titulo}")
                 st.caption(texto)
 
@@ -555,15 +578,19 @@ def aba_comparacao(
 # ---------------------------------------------------------------------------
 
 
-def aba_tabela(comparacao) -> None:
-    """A comparação inteira numa tabela, com o CSV para levar embora."""
+def aba_tabela(comparacao, apolices) -> None:
+    """A comparação inteira numa tabela, com o CSV para levar embora.
+
+    Recebe as apólices para poder escrever "valor não está neste documento" no
+    lugar de "não trata do assunto" quando for o caso — ver `_valor`.
+    """
     _secao("📋 A comparação inteira, campo a campo")
     st.caption(
         "É o mesmo veredito do motor, sem releitura: a interface não reinterpreta "
         "ninguém. Baixe em CSV para levar a comparação embora."
     )
 
-    colunas, linhas = matriz_comparativa(comparacao)
+    colunas, linhas = matriz_comparativa(comparacao, apolices=apolices)
     tabela = pd.DataFrame(linhas, columns=list(colunas))
     st.dataframe(_pintar(tabela), hide_index=True, width="stretch")
 
@@ -571,7 +598,7 @@ def aba_tabela(comparacao) -> None:
     with esquerda:
         st.download_button(
             "Baixar a comparação em CSV",
-            data=exportar_csv(comparacao),
+            data=exportar_csv(comparacao, apolices=apolices),
             file_name=nome_arquivo_csv(comparacao),
             mime="text/csv",
             icon="⬇️",
@@ -715,8 +742,11 @@ def aba_apolices(
 
 
 def _cartao_apolice(resumo, caminho: Path | None) -> None:
-    """O cartão de uma apólice: procedência, cobertura de campos e origem."""
-    with st.container(border=True):
+    """O cartão de uma apólice: procedência, cobertura de campos e origem.
+
+    O `key` é a âncora `st-key-cartao-*` que o CSS usa — ver `_cartao`.
+    """
+    with st.container(border=True, key=f"cartao-apolice-{resumo.documento}"):
         st.markdown(
             f'<div class="apolice-nome">{html.escape(resumo.nome)}</div>'
             f'<div class="apolice-arquivo">{html.escape(resumo.documento)}</div>'
@@ -754,13 +784,28 @@ def _envio(banco: Banco) -> None:
             "fora. PDF nativo é lido normalmente."
         )
 
+    # Três estados, não dois: a frente B pode estar publicada e mesmo assim não
+    # haver chave de modelo nesta máquina. Prometer a extração nesse caso é o
+    # que a tela não pode fazer — o documento entra, é lido, e para aí.
     extrator = encontrar_extrator(carregar_modulo_extracao())
+    provedores = provedores_disponiveis()
     if extrator is None:
         st.info(aviso_sem_extracao(), icon="🧩")
+    elif not provedores:
+        st.warning(
+            "A extração das cláusulas está publicada "
+            f"(`{extrator.__name__}`, frente B em `app.agents`), mas **nenhuma chave "
+            "de modelo está configurada no `.env`**: o documento enviado é lido e "
+            "guardado, e a extração dos campos não roda. Configure `GOOGLE_API_KEY`, "
+            "`GROQ_API_KEY` ou `OPENROUTER_API_KEY` para ligá-la. A comparação da "
+            "aba *Comparação* não depende disso.",
+            icon="🔑",
+        )
     else:
         st.success(
             "A extração das cláusulas está disponível: "
-            f"`{extrator.__name__}`, publicada pela frente B em `app.agents`. "
+            f"`{extrator.__name__}`, publicada pela frente B em `app.agents`, "
+            "com " + ", ".join(provedores) + " configurado(s). "
             "O documento enviado já sai daqui com os campos estruturados.",
             icon="✅",
         )
@@ -891,12 +936,16 @@ def main() -> None:
 
     if usando_exemplos(apolices):
         st.warning(
-            "**Demonstração sobre extrações de exemplo.** A frente B (extração das "
-            "cláusulas com IA generativa) ainda está sendo escrita. Os campos "
-            "comparados aqui foram escritos à mão em `app/domain/exemplos.py`, "
-            "imitando as condições gerais reais, para a interface não ficar parada. "
-            "Eles **não são resultado do sistema** e não podem ser apresentados como "
-            "tal — a ingestão e o motor de comparação, esses sim, são reais.",
+            "**Demonstração sobre extrações de exemplo.** Os campos comparados aqui "
+            "foram escritos à mão em `app/domain/exemplos.py`, imitando as condições "
+            "gerais reais, para a interface não ficar parada. A extração com IA "
+            "generativa existe — `extrair_apolice`, em `app.agents` —, mas nos "
+            "documentos comparados os cinco campos numéricos não têm valor: as "
+            "condições gerais remetem LMI, franquia, vigência, retroatividade e "
+            "sublimites à Especificação da Apólice, que não está no lote. Sem número "
+            "para comparar, estes campos **não são resultado do sistema** e não podem "
+            "ser apresentados como tal — a ingestão e o motor de comparação, esses "
+            "sim, são reais.",
             icon="🧪",
         )
 
@@ -909,7 +958,7 @@ def main() -> None:
     with abas[0]:
         aba_comparacao(comparacao, apolices, documentos, incluir_iguais, situacoes)
     with abas[1]:
-        aba_tabela(comparacao)
+        aba_tabela(comparacao, apolices)
     with abas[2]:
         aba_rastreabilidade(comparacao, apolices)
     with abas[3]:

@@ -12,7 +12,10 @@ relatório mentem sobre a mesma tela. Por isso este módulo **não importa
 Streamlit** — e é ele que os testes exercitam.
 
 Nada aqui inventa dado: quando o campo não existe, `ValorNaTela.ausente` é
-verdadeiro e o texto exibido é explícito, no mesmo espírito da tarefa B.4.
+verdadeiro e o texto exibido é explícito, no mesmo espírito da tarefa B.4. E
+quando a cláusula existe mas o valor não está no documento — o caso das condições
+gerais de D&O, que remetem o número à Especificação da Apólice —, a tela mostra a
+ressalva do extrator em vez de afirmar que a apólice não trata do assunto.
 """
 
 from __future__ import annotations
@@ -33,6 +36,14 @@ from ..schemas import ApoliceExtraida, CampoExtraido
 #: "não trata do assunto" de "campo vazio", e a tela precisa fazer o mesmo —
 #: senão a diferença mais relevante da comparação vira um espaço em branco.
 TEXTO_AUSENTE = "— não trata do assunto —"
+
+#: Quando a cláusula existe mas o número não está no documento comparado.
+#:
+#: Não é ausência: as condições gerais de D&O definem franquia, LMI, vigência e
+#: retroatividade como "o valor indicado na Especificação da Apólice" — e é a
+#: especificação, não as condições gerais, que traz o número. Escrever "não trata
+#: do assunto" ali seria afirmar o contrário do que o documento diz.
+TEXTO_SEM_VALOR = "— valor não está neste documento —"
 
 #: Quando o extrator achou o valor mas não conseguiu localizá-lo no documento.
 TEXTO_SEM_PAGINA = "página de origem não identificada"
@@ -206,16 +217,46 @@ class ValorNaTela:
     campo: CampoExtraido | None
 
     @property
+    def sem_valor_no_documento(self) -> bool:
+        """A cláusula existe, mas o valor não está neste documento.
+
+        Reconhecido pela prova que o extrator deixou: a ressalva escrita ("o valor
+        é definido na Especificação da Apólice") ou o trecho de origem. Sem
+        nenhuma das duas não há como distinguir isto de ausência de verdade, e a
+        tela não deve inventar a distinção — daí o teste pelas duas.
+        """
+        if self.campo is None or self.campo.encontrado:
+            return False
+        return bool(self.campo.observacao or self.campo.trecho_origem)
+
+    @property
     def ausente(self) -> bool:
-        """Se esta apólice não trata do assunto."""
-        return self.campo is None or not self.campo.encontrado
+        """Se esta apólice não trata do assunto.
+
+        Faltar o valor não basta. Quando o extrator achou a cláusula e registrou
+        por que não há número, o documento **trata** do assunto — e era o
+        contrário disso que a tela dizia, descartando junto a página e o trecho
+        que a extração tinha registrado.
+        """
+        if self.campo is not None and self.campo.encontrado:
+            return False
+        return not self.sem_valor_no_documento
 
     @property
     def texto(self) -> str:
-        """O valor como aparece na tela, ou o texto explícito de ausência."""
-        if self.campo is None or self.campo.valor is None:
+        """O valor como aparece na tela, ou o texto explícito de ausência.
+
+        São três casos, e não dois: valor encontrado; campo que a apólice não
+        trata; e cláusula presente cujo número está em outro documento — neste
+        último, o que se mostra é a ressalva do extrator.
+        """
+        if self.campo is None:
             return TEXTO_AUSENTE
-        return self.campo.valor.strip() or TEXTO_AUSENTE
+        if self.campo.encontrado:
+            return self.campo.valor.strip()
+        if self.sem_valor_no_documento:
+            return (self.campo.observacao or "").strip() or TEXTO_SEM_VALOR
+        return TEXTO_AUSENTE
 
     @property
     def pagina(self) -> int | None:
@@ -397,22 +438,34 @@ def montar_kpis(comparacao: Comparacao) -> tuple[Kpi, ...]:
 
 
 def matriz_comparativa(
-    comparacao: Comparacao, apenas_relevantes: bool = False
+    comparacao: Comparacao,
+    apenas_relevantes: bool = False,
+    apolices: Sequence[ApoliceExtraida] | None = None,
 ) -> tuple[tuple[str, ...], tuple[dict[str, Any], ...]]:
     """A comparação inteira em formato de tabela, para o `st.dataframe`.
 
     Devolve `(colunas, linhas)` em vez de um DataFrame para não arrastar pandas
     para dentro do módulo que os testes exercitam.
+
+    `apolices` é opcional porque a matriz funciona só com a comparação — mas,
+    quando vem, é o que permite distinguir "a apólice não trata do assunto" de "a
+    cláusula existe e o número está em outro documento". A diferença mora no
+    `CampoExtraido`, e o motor devolve só o texto do valor.
     """
     colunas = ("Campo", *comparacao.apolices, "Situação")
     diferencas = comparacao.relevantes if apenas_relevantes else comparacao.diferencas
+    por_nome = {a.nome: a for a in (apolices or ())}
 
     linhas: list[dict[str, Any]] = []
     for d in diferencas:
         linha: dict[str, Any] = {"Campo": d.campo.rotulo}
         for nome in comparacao.apolices:
-            valor = d.valores.get(nome)
-            linha[nome] = valor.strip() if valor else TEXTO_AUSENTE
+            if por_nome:
+                campo = _campo_de(por_nome.get(nome), d)
+                linha[nome] = ValorNaTela(apolice=nome, campo=campo).texto
+            else:
+                valor = d.valores.get(nome)
+                linha[nome] = valor.strip() if valor else TEXTO_AUSENTE
         linha["Situação"] = estilo(d.veredito).rotulo
         linhas.append(linha)
 
@@ -455,13 +508,18 @@ def linhas_rastreabilidade(
     return tuple(linhas)
 
 
-def exportar_csv(comparacao: Comparacao, apenas_relevantes: bool = False) -> str:
+def exportar_csv(
+    comparacao: Comparacao,
+    apenas_relevantes: bool = False,
+    apolices: Sequence[ApoliceExtraida] | None = None,
+) -> str:
     """A comparação em CSV, pronta para o `st.download_button`.
 
     Separador `;` e BOM porque quem recebe isto abre no Excel em português — e
-    um CSV de cláusulas com acento quebrado é pior que nenhum CSV.
+    um CSV de cláusulas com acento quebrado é pior que nenhum CSV. `apolices`
+    passa adiante para `matriz_comparativa`: ver a nota lá.
     """
-    colunas, linhas = matriz_comparativa(comparacao, apenas_relevantes)
+    colunas, linhas = matriz_comparativa(comparacao, apenas_relevantes, apolices)
     buffer = io.StringIO()
     escritor = csv.DictWriter(
         buffer, fieldnames=list(colunas), delimiter=";", lineterminator="\n"
@@ -564,10 +622,10 @@ def encontrar_extrator(modulo: object | None) -> Callable[..., Any] | None:
     """Acha, num módulo, a função que transforma texto em campos.
 
     O contrato combinado com a frente B: ela publica em `app.agents` uma função
-    que recebe um `DocumentoExtraido` e devolve uma `ApoliceExtraida`. Enquanto
-    não houver nenhuma, a tela diz que a extração está em desenvolvimento — em
-    vez de mostrar campo vazio como se a apólice não tratasse do assunto, que
-    seria a mentira mais cara possível neste projeto.
+    que recebe um `DocumentoExtraido` e devolve uma `ApoliceExtraida` — hoje é
+    `extrair_apolice`. Quando nenhuma é encontrada, a tela diz que a extração não
+    está publicada, em vez de mostrar campo vazio como se a apólice não tratasse
+    do assunto, que seria a mentira mais cara possível neste projeto.
     """
     if modulo is None:
         return None
@@ -579,7 +637,7 @@ def encontrar_extrator(modulo: object | None) -> Callable[..., Any] | None:
 
 
 def carregar_modulo_extracao(nome: str = MODULO_EXTRACAO) -> object | None:
-    """Importa o módulo da frente B, ou devolve `None` se ele ainda não existe."""
+    """Importa o módulo da frente B, ou devolve `None` se não der para importar."""
     try:
         return importlib.import_module(nome)
     except ImportError:
@@ -587,12 +645,19 @@ def carregar_modulo_extracao(nome: str = MODULO_EXTRACAO) -> object | None:
 
 
 def aviso_sem_extracao() -> str:
-    """A frase que explica, na tela, por que os campos ainda não saem do LLM."""
+    """A frase que explica, na tela, por que os campos não saem do LLM.
+
+    É o caminho de exceção: `app.agents` publica `extrair_apolice`, então este
+    texto só aparece quando a importação falha ou a função some. Por isso ele
+    fala do que falta **neste ambiente**, e não de uma frente inacabada — dizer
+    "ainda não está pronta" com a extração publicada seria falso.
+    """
     return (
-        "**A extração das cláusulas ainda não está pronta (frente B, tarefas B.2 a B.4).**\n\n"
+        "**A extração das cláusulas não está publicada neste ambiente.**\n\n"
         "A ingestão é real: o documento foi lido, página a página, e o que aparece acima "
-        "saiu dele. O que falta é a etapa que transforma esse texto nos campos "
-        "estruturados — e é ela que vai publicar a função de extração em `app.agents`. "
-        "Enquanto isso, a comparação da aba *Comparação* roda sobre as extrações de "
-        "exemplo de `app/domain/exemplos.py`, identificadas como tal em cada tela."
+        "saiu dele. O que falta aqui é a etapa que transforma esse texto nos campos "
+        "estruturados — a frente B a publica como `extrair_apolice`, em `app.agents`, e "
+        "este aviso quer dizer que ela não foi encontrada. Enquanto isso, a comparação "
+        "da aba *Comparação* roda sobre as extrações de exemplo de "
+        "`app/domain/exemplos.py`, identificadas como tal em cada tela."
     )

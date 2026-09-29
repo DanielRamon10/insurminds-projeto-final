@@ -12,8 +12,12 @@
  *      KPI que saía "Campos compara…", a fonte dos ícones).
  *
  * A regra que evitou retrabalho: nada aqui depende de estrutura interna do
- * Streamlit além de `stVerticalBlockBorderWrapper`, que é o contêiner de
- * `st.container(border=True)`. Se o Streamlit mudar esse nome, o pior que
+ * Streamlit. Os cartões se ancoram em `[class*="st-key-cartao"]` — a classe que
+ * o próprio Streamlit gera a partir do `key=` do container, documentada como
+ * API pública ("CSS class name prefixed with `st-key-`"). A versão anterior
+ * desta folha se apoiava em `stVerticalBlockBorderWrapper`, um `data-testid`
+ * que o Streamlit 1.64 não emite mais: a regra ficou morta e os cartões saíram
+ * sem fundo, sem raio e sem sombra. Se a âncora mudar de novo, o pior que
  * acontece é o cartão perder a sombra — nenhuma informação desaparece.
  */
 
@@ -115,7 +119,12 @@ html, body, button, input, textarea, select,
    Cartões de diferença (D.2) e valores (D.3)
    -------------------------------------------------------------------------- */
 
-div[data-testid="stVerticalBlockBorderWrapper"] {
+/* A âncora é a classe `st-key-cartao*`, gerada pelo `key=` dos containers.
+   O seletor antigo (`stVerticalBlockBorderWrapper`) casava zero elementos no
+   Streamlit 1.64 — a regra estava morta e os cartões saíam sem fundo, sem
+   raio e sem sombra. `st-key-` é API pública (o nome da classe vem de
+   `"st-key-" + key`), então não depende de hash de emotion. */
+div[class*="st-key-cartao"] {
     border-radius: 18px;
     background: #FFFFFF;
     box-shadow: 0 6px 18px rgba(15, 23, 42, .05);
@@ -144,6 +153,18 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     margin-bottom: 4px;
 }
 
+/* As colunas de um cartão crescem independentes: sem uma altura mínima
+   comum, o valor que ocupa duas linhas empurra o rodapé do cartão 21px
+   abaixo do vizinho — medido no Chrome antes da correção (AIG 65px contra
+   Chubb 44px). Duas linhas de 1rem com `line-height: 1.35` dão 43,2px, mais
+   20px de padding e 2px de borda: 65,2px. Daí os 66px, iguais nos dois tipos
+   de caixa para que valor e ausência alinhem entre si.
+
+   Limite conhecido: um valor de três linhas (87px) ainda fica mais alto que
+   um de duas. Igualar isso exigiria esticar containers internos do Streamlit
+   com `display: flex` encadeado — a mesma dependência de estrutura interna
+   que deixou a regra do cartão morta na 1.64. Não vale o risco por 1 cartão
+   em 9. */
 .valor {
     font-size: 1rem;
     font-weight: 600;
@@ -154,6 +175,8 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     border-left: 3px solid #0D9488;
     border-radius: 10px;
     padding: 10px 12px;
+    box-sizing: border-box;
+    min-height: 66px;
 }
 
 .valor-ausente {
@@ -164,6 +187,8 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     border: 1px dashed #CBD5E1;
     border-radius: 10px;
     padding: 10px 12px;
+    box-sizing: border-box;
+    min-height: 66px;
 }
 
 .porque {

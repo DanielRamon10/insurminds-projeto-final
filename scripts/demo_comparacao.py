@@ -1,7 +1,9 @@
 """Demonstração das frentes C.1 a C.3: armazenamento e comparação.
 
-Roda com as extrações de exemplo de `app/domain/exemplos.py`, porque a frente B
-ainda está sendo escrita. Serve a dois propósitos: mostrar o motor de comparação
+Roda com as extrações de exemplo de `app/domain/exemplos.py`: nos documentos
+comparados, os cinco campos numéricos não têm valor — as condições gerais remetem
+LMI, franquia, vigência, retroatividade e sublimites à Especificação da Apólice,
+que não está no lote. Serve a dois propósitos: mostrar o motor de comparação
 funcionando e deixar visível o contrato que a extração precisa produzir.
 
     python -m scripts.demo_comparacao

@@ -66,6 +66,12 @@ Uma frase por decisão, como o roteiro pede:
   é exigido literalmente pelo enunciado e os números do deck saem do próprio
   código; gerado à mão, o texto envelheceria em silêncio. Há teste que confere os
   números do deck contra o motor de comparação.
+* **Os prints do deck saem do próprio gerador** — o slide de demonstração cola os
+  recortes de `Projeto_Final_Artefatos/prints/` sozinho, com a legenda embaixo de
+  cada tela. Sem os arquivos, o mesmo slide desenha a caixa com "print N — colar
+  aqui" e a execução diz quais faltam: um clone recém-baixado mostra o que falta
+  em vez de um slide quebrado, e não existe o estado intermediário de uma tela
+  colada ao lado de duas caixas vazias.
 * **Demonstração por linha de comando (D.4)** — o vídeo é o entregável mais fácil
   de perder; se o navegador ou o Streamlit falharem na máquina de quem grava,
   existe um caminho alternativo que mostra o sistema inteiro sem interface.
@@ -88,11 +94,26 @@ Da perspectiva de quem usa:
 
 ## Limitações conhecidas (frente D)
 
-* **A demonstração roda sobre extrações de exemplo.** Enquanto a frente B não
-  entrega, os valores comparados são dados escritos à mão em
-  `app/domain/exemplos.py`. Ingestão, banco, comparação, rastreabilidade e
+* **A demonstração roda sobre extrações de exemplo.** A extração com LLM está
+  publicada (`extrair_apolice`, em `app.agents`) e funciona: nos documentos
+  comparados ela devolve 9 dos 15 campos na AIG e 10 na Chubb, todos com página e
+  trecho. Os que faltam são numéricos — LMI, franquia, vigência, retroatividade e
+  sublimites — e não faltam por falha: as condições gerais definem cada um como "o
+  valor indicado na Especificação da Apólice", e é a especificação que traz o
+  número. A extração acha a cláusula, cita a página e registra a ressalva. Como não
+  há número para comparar, os valores da demonstração continuam sendo dados escritos
+  à mão em `app/domain/exemplos.py`. Ingestão, banco, comparação, rastreabilidade e
   interface são reais; os campos, não. O relatório precisa dizer isso onde citar
   números da demonstração.
+* **Ausência e "valor em outro documento" já se distinguem na tela.** Quando o
+  campo não tem valor, a interface consulta a prova que o extrator deixou: havendo
+  ressalva ou trecho de origem, mostra a ressalva — "— valor não está neste
+  documento —" com o texto do extrator — e **continua oferecendo o botão *De onde
+  veio***; sem nenhuma das duas, mostra "não trata do assunto". Antes disso a tela
+  escrevia "não trata do assunto" nos cinco campos numéricos e descartava a página e
+  o trecho registrados, ou seja, apagava rastreabilidade justamente onde a cláusula
+  remete a outro documento. `tests/test_interface.py` guarda os dois lados,
+  inclusive contra a extração real de `data/extracoes/`.
 * **Uma comparação por vez na tela.** Comparar três ou mais apólices funciona no
   motor e é testado, mas o layout lado a lado fica estreito; a tela assume o caso
   de uso real, que é comparar duas propostas.
