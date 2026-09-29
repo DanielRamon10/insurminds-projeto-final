@@ -177,6 +177,129 @@ def sigla(veredito: Veredito) -> str:
     return estilo(veredito).simbolo
 
 
+# ---------------------------------------------------------------------------
+# Identidade visual: ícone de cada campo e cor de cada seguradora
+# ---------------------------------------------------------------------------
+
+
+#: Um ícone por campo do dicionário, com o nome que a fonte "Material Symbols
+#: Rounded" usa como ligadura. A fonte não é baixada por nós: o próprio
+#: Streamlit já a carrega para desenhar os ícones dele (`theme.iconFont`), e o
+#: nome é o texto que ela converte em desenho. Usar a mesma fonte evita mais um
+#: pedido de rede e mantém o traço igual ao dos componentes nativos.
+#:
+#: A armadilha, que já custou uma correção nesta frente: se alguma regra de
+#: `font-family` alcançar o span do ícone, a ligadura não acontece e o navegador
+#: pinta o NOME por extenso — foi o "De expand_more" que a tela mostrava. O
+#: teste `test_a_fonte_do_texto_nao_alcanca_os_icones` protege isso.
+ICONE_DO_CAMPO: dict[str, str] = {
+    "limite_maximo_indenizacao": "payments",
+    "franquia": "receipt_long",
+    "vigencia": "event_available",
+    "retroatividade": "history",
+    "prazo_complementar": "hourglass_bottom",
+    "ambito_geografico": "public",
+    "definicao_segurado": "badge",
+    "custos_defesa": "gavel",
+    "multas_administrativas": "request_quote",
+    "exclusao_atos_dolosos": "block",
+    "exclusao_ambiental": "eco",
+    "clausula_rescisao": "cancel_schedule_send",
+    "definicao_reclamacao": "campaign",
+    "sublimites": "stacked_bar_chart",
+    "cobertura_investigacoes": "search",
+}
+
+#: Ícone de quem não está no mapa — um campo novo no dicionário não deve
+#: derrubar a tela nem sair sem ícone.
+ICONE_DE_CAMPO_DESCONHECIDO = "description"
+
+
+def icone_do_campo(campo_id: str) -> str:
+    """O nome do ícone do campo, ou o genérico se o campo for novo."""
+    return ICONE_DO_CAMPO.get(campo_id, ICONE_DE_CAMPO_DESCONHECIDO)
+
+
+#: Cor de acento por seguradora. Não é a cor da marca — é uma cor de leitura,
+#: para o olho achar a coluna sem ler o rótulo. As marcas conhecidas ficam
+#: fixas para não mudarem de cor entre execuções; o resto cai num tom estável
+#: derivado do próprio nome, que é o que garante que a mesma apólice apareça
+#: sempre com a mesma cor.
+CORES_DE_SEGURADORA: dict[str, str] = {
+    "aig": "#185FA5",
+    "chubb": "#2C2C2A",
+    "tokio": "#0F6E56",
+    "allianz": "#185FA5",
+    "zurich": "#185FA5",
+    "axa": "#7C3AED",
+    "porto": "#993C1D",
+    "sulamerica": "#185FA5",
+    "liberty": "#993556",
+    "mapfre": "#993C1D",
+    "hdi": "#0F6E56",
+}
+
+#: Paleta de reserva, toda de tons escuros o bastante para carregar texto
+#: branco por cima. A ordem é fixa: o mesmo nome sempre cai no mesmo tom.
+PALETA_DE_RESERVA: tuple[str, ...] = (
+    "#185FA5", "#0F6E56", "#7C3AED", "#993C1D",
+    "#993556", "#854F0B", "#2C2C2A", "#3B6D11",
+)
+
+
+def cor_da_seguradora(nome: str) -> str:
+    """Uma cor estável para a seguradora, para distinguir as colunas na tela.
+
+    A marca conhecida tem cor fixa; qualquer outra cai num tom derivado do
+    nome. É determinístico de propósito: se a cor mudasse entre execuções, a
+    coluna da AIG mudaria de cor no meio de uma apresentação.
+    """
+    chave = nome.strip().lower()
+    for marca, cor in CORES_DE_SEGURADORA.items():
+        if marca in chave:
+            return cor
+    # `hash()` do Python varia a cada processo (PYTHONHASHSEED), então não
+    # serve aqui. A soma dos caracteres é estável entre execuções.
+    soma = sum(ord(c) for c in chave) if chave else 0
+    return PALETA_DE_RESERVA[soma % len(PALETA_DE_RESERVA)]
+
+
+#: Palavras que aparecem no nome registrado e não identificam a marca. Sem
+#: descartá-las, "AIG Seguros Brasil S.A." viraria o chip "ASB" — as iniciais do
+#: nome da empresa, não da seguradora que o corretor reconhece.
+PALAVRAS_QUE_NAO_SAO_A_MARCA: frozenset[str] = frozenset({
+    "sa", "ltda", "cia", "companhia", "seguros", "seguradora", "brasil",
+    "do", "da", "de", "e", "group", "grupo", "holding", "gerais", "minas",
+})
+
+
+def iniciais_da_seguradora(nome: str) -> str:
+    """As iniciais para o chip: "AIG Seguros Brasil S.A." vira "AIG".
+
+    Duas regras, porque os dois formatos que aparecem no projeto são diferentes:
+    a razão social longa ("AIG Seguros Brasil S.A.") pede que se descarte o
+    juridiquês e fique com a marca; o nome curto ("Chubb") já é a marca, e
+    cortá-lo em três letras daria um chip que não se lê.
+    """
+    # O ponto vira espaço antes do split, e o "S.A." se desfaz em duas letras
+    # soltas — que não são palavras e por isso saem junto com o juridiquês.
+    palavras = [p for p in nome.replace(".", " ").split() if p[:1].isalpha() and len(p) > 1]
+    marca = [p for p in palavras if p.lower() not in PALAVRAS_QUE_NAO_SAO_A_MARCA]
+    if not marca:
+        marca = palavras
+    if not marca:
+        return "??"
+
+    if len(marca) == 1:
+        unica = marca[0]
+        # Sigla já vem pronta ("AIG", "AXA"); nome comum vira duas letras.
+        if unica.isupper() and len(unica) <= 4:
+            return unica
+        return unica[:2].upper()
+
+    return "".join(p[0] for p in marca[:3]).upper()
+
+
 def formatar_pagina(
     pagina: int | None, paginas_possiveis: Iterable[int] = ()
 ) -> str:
@@ -429,6 +552,89 @@ def montar_kpis(comparacao: Comparacao) -> tuple[Kpi, ...]:
             icone="✅",
             cor="green",
         ),
+    )
+
+
+@dataclass(frozen=True)
+class FatiaDaComposicao:
+    """Um pedaço da barra que mostra a situação de cada campo."""
+
+    rotulo: str
+    """Como a fatia é nomeada na legenda."""
+
+    quantidade: int
+    """Quantos campos caíram nesta situação."""
+
+    cor: str
+    """Cor sólida da fatia, no mesmo tom do selo do cartão."""
+
+    simbolo: str
+    """A marca de uma letra, para quem não vê a cor."""
+
+
+#: A cor de cada fatia, no mesmo tom que o selo usa. Manter aqui — e não no CSS
+#: — é o que permite a fatia e o selo nunca discordarem: os dois saem do mesmo
+#: mapa, e o teste confere que todo veredito do motor tem entrada.
+CORES_DA_COMPOSICAO: dict[Veredito, str] = {
+    Veredito.AUSENTE_EM_ALGUMA: "#F59E0B",
+    Veredito.DIFERENTE: "#DC2626",
+    Veredito.REDACAO_DIVERGENTE: "#7C3AED",
+    Veredito.IGUAL: "#16A34A",
+    Veredito.AUSENTE_EM_TODAS: "#CBD5E1",
+}
+
+
+def fatias_da_composicao(comparacao: Comparacao) -> tuple[FatiaDaComposicao, ...]:
+    """A comparação inteira como uma barra só, em ordem de peso na decisão.
+
+    Cinco números separados não dizem nada sobre proporção: "8, 1, 0, 1, 5" só
+    vira informação quando alguém soma. A barra mostra de relance que cinco dos
+    quinze campos não são tratados por nenhuma das apólices — que é o argumento
+    do projeto, e o que a ausência-como-ausência existe para deixar visível.
+
+    Vem de `Comparacao.resumo`, como os KPIs: a interface não reconta nada.
+    """
+    resumo = comparacao.resumo
+    ordem = sorted(ESTILOS, key=lambda v: ESTILOS[v].ordem)
+    if Veredito.AUSENTE_EM_TODAS not in ordem:
+        ordem.append(Veredito.AUSENTE_EM_TODAS)
+
+    fatias: list[FatiaDaComposicao] = []
+    for veredito in ordem:
+        quantidade = resumo.get(veredito.value, 0)
+        if veredito is Veredito.AUSENTE_EM_TODAS:
+            rotulo, simbolo = "Fora das duas", "∅∅"
+        else:
+            est = estilo(veredito)
+            rotulo, simbolo = est.rotulo, est.simbolo
+        fatias.append(
+            FatiaDaComposicao(
+                rotulo=rotulo,
+                quantidade=quantidade,
+                cor=CORES_DA_COMPOSICAO.get(veredito, "#CBD5E1"),
+                simbolo=simbolo,
+            )
+        )
+    return tuple(fatias)
+
+
+#: Fundo do selo de veredito, no tom claro da cor da fatia. O texto usa a cor
+#: cheia (`CORES_DA_COMPOSICAO`), então a mesma situação tem o mesmo significado
+#: cromático na barra, no selo e na célula da tabela.
+CORES_DO_SELO: dict[Veredito, str] = {
+    Veredito.AUSENTE_EM_ALGUMA: "#FEF4E4",
+    Veredito.DIFERENTE: "#FCEBEB",
+    Veredito.REDACAO_DIVERGENTE: "#F0EDFE",
+    Veredito.IGUAL: "#E7F6ED",
+    Veredito.AUSENTE_EM_TODAS: "#F1F5F9",
+}
+
+
+def cores_do_selo(veredito: Veredito) -> tuple[str, str]:
+    """(fundo, texto) do selo de um veredito, com um par neutro de reserva."""
+    return (
+        CORES_DO_SELO.get(veredito, "#F1F5F9"),
+        CORES_DA_COMPOSICAO.get(veredito, "#475569"),
     )
 
 

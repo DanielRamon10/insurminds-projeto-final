@@ -61,15 +61,19 @@ from app.interface.apresentacao import (  # noqa: E402
     ValorNaTela,
     aviso_sem_extracao,
     carregar_modulo_extracao,
+    cor_da_seguradora,
+    cores_do_selo,
     encontrar_extrator,
     estilo,
     exportar_csv,
+    fatias_da_composicao,
     formatar_pagina,
+    icone_do_campo,
+    iniciais_da_seguradora,
     legenda,
     linhas_rastreabilidade,
     matriz_comparativa,
     montar_cartoes,
-    montar_kpis,
     nome_arquivo_csv,
     resumir_apolice,
     SITUACOES_NO_FILTRO,
@@ -232,6 +236,66 @@ def aviso_de_preservadas(preservadas: int) -> str:
 # ---------------------------------------------------------------------------
 
 
+#: A arte do cabeçalho: dois documentos comparados, com o escudo da conferência
+#: no meio. É SVG escrito aqui, e não uma imagem, por três motivos — pesa menos
+#: de 1 KB, fica nítido em qualquer zoom (inclusive no vídeo comprimido) e
+#: acompanha a paleta se o tema mudar. Um PNG no repositório não faria nenhum
+#: dos três.
+#:
+#: O `<div>` em volta não é enfeite: o markdown do Streamlit reconhece `<div>`
+#: como bloco, mas não reconhece `<svg>`, e embrulha o que não conhece num `<p>`.
+#: Sem a div, o SVG deixava de ser filho direto do flex `.hero-topo` e a arte
+#: caía para baixo do texto em vez de ficar ao lado.
+ARTE_DO_CABECALHO = """
+<div class="hero-arte">
+<svg width="196" height="106" viewBox="0 0 196 106"
+     role="img" aria-label="Dois documentos comparados, com um escudo ao centro">
+  <rect x="4" y="19" width="52" height="68" rx="7" fill="#0B5C53" stroke="#4E9E94"/>
+  <rect x="13" y="31" width="34" height="5" rx="2.5" fill="#8FCFC6"/>
+  <rect x="13" y="43" width="27" height="5" rx="2.5" fill="#4E9E94"/>
+  <rect x="13" y="55" width="31" height="5" rx="2.5" fill="#4E9E94"/>
+  <rect x="13" y="67" width="20" height="5" rx="2.5" fill="#4E9E94"/>
+  <rect x="140" y="19" width="52" height="68" rx="7" fill="#0B5C53" stroke="#4E9E94"/>
+  <rect x="149" y="31" width="34" height="5" rx="2.5" fill="#8FCFC6"/>
+  <rect x="149" y="43" width="25" height="5" rx="2.5" fill="#4E9E94"/>
+  <rect x="149" y="55" width="32" height="5" rx="2.5" fill="#4E9E94"/>
+  <rect x="149" y="67" width="18" height="5" rx="2.5" fill="#4E9E94"/>
+  <path d="M98 11 L120 21 L120 45 C120 62 109 72 98 79 C87 72 76 62 76 45 L76 21 Z" fill="#FFFFFF"/>
+  <path d="M88 44 L94 51 L109 35" stroke="#0E6E63" stroke-width="3.5" fill="none"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M60 53 H72" stroke="#8FCFC6" stroke-width="2" stroke-dasharray="3 3"/>
+  <path d="M124 53 H136" stroke="#8FCFC6" stroke-width="2" stroke-dasharray="3 3"/>
+</svg>
+</div>
+"""
+
+
+#: O molde do cabeçalho. Fica aqui, na coluna zero, e não dentro da função por
+#: um motivo concreto: o markdown do Streamlit lê a string antes de entregá-la
+#: ao navegador, e linha com quatro espaços ou mais vira **bloco de código** —
+#: as tags de fechamento apareceram escritas na tela, dentro de um retângulo, no
+#: meio do cabeçalho. Recuar o HTML dentro da função e desrecuar depois não
+#: resolve: o SVG interpolado já está na coluna zero, então o `dedent` não tem
+#: prefixo comum para tirar e o recuo continua lá.
+_MOLDE_DO_CABECALHO = """
+<div class="hero">
+  <div class="hero-topo">
+    <div class="hero-texto">
+      <h1>Comparador de apólices D&amp;O</h1>
+      <p>Leitura, extração e comparação de condições gerais de seguro para
+      <i>Directors &amp; Officers</i>. {contexto}.</p>
+      <div class="linha-selos">
+        <span class="selo">IA generativa sobre documento jurídico</span>
+        <span class="selo">cada valor aponta a página de origem</span>
+        <span class="selo">protótipo InsurMinds · I2A2</span>
+      </div>
+    </div>
+    {arte}
+  </div>
+</div>
+"""
+
+
 def cabecalho(comparacao_em_uso: str | None = None) -> None:
     """O cabeçalho da página."""
     contexto = (
@@ -240,18 +304,7 @@ def cabecalho(comparacao_em_uso: str | None = None) -> None:
         else "Selecione duas apólices na barra lateral para começar"
     )
     st.markdown(
-        f"""
-        <div class="hero">
-          <h1>🛡️ Comparador de apólices D&amp;O</h1>
-          <p>Leitura, extração e comparação de condições gerais de seguro para
-          <i>Directors &amp; Officers</i>. {contexto}.</p>
-          <div class="linha-selos">
-            <span class="selo">IA generativa sobre documento jurídico</span>
-            <span class="selo">cada valor aponta a página de origem</span>
-            <span class="selo">protótipo InsurMinds · I2A2</span>
-          </div>
-        </div>
-        """,
+        _MOLDE_DO_CABECALHO.format(contexto=contexto, arte=ARTE_DO_CABECALHO).strip(),
         unsafe_allow_html=True,
     )
 
@@ -275,8 +328,13 @@ def _valor(valor: ValorNaTela, documentos: dict[str, Path | None]) -> None:
     "não trata do assunto" e descartava a página e o trecho que a extração tinha
     registrado, ou seja, perdia rastreabilidade justamente onde ela mais importa.
     """
+    acento = cor_da_seguradora(valor.apolice)
     st.markdown(
-        f'<div class="valor-nome">{html.escape(valor.apolice)}</div>',
+        f'<div class="valor-cabeca">'
+        f'<span class="valor-chip" style="--acento:{acento}">'
+        f"{html.escape(iniciais_da_seguradora(valor.apolice))}</span>"
+        f'<span class="valor-seguradora">{html.escape(valor.apolice)}</span>'
+        f"</div>",
         unsafe_allow_html=True,
     )
 
@@ -288,7 +346,7 @@ def _valor(valor: ValorNaTela, documentos: dict[str, Path | None]) -> None:
 
     classe = "valor-ausente" if valor.sem_valor_no_documento else "valor"
     st.markdown(
-        f'<div class="{classe}">{html.escape(valor.texto)}</div>',
+        f'<div class="{classe}" style="--acento:{acento}">{html.escape(valor.texto)}</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
@@ -342,18 +400,30 @@ def _cartao(cartao: CartaoDiferenca, documentos: dict[str, Path | None]) -> None
 
     O `key` vira a classe `st-key-cartao-*` no HTML — é a âncora estável que
     `estilo.css` usa para desenhar o cartão. Sem ela o CSS não alcança nada.
+
+    O selo do veredito é escrito à mão em vez de usar `st.badge` porque o badge
+    do Streamlit pinta só o texto, e a cor dele é escolhida de uma lista fixa de
+    nomes. Aqui o selo é uma pílula com fundo, e a cor sai do mesmo mapa que
+    pinta a fatia da barra de composição — assim a mesma situação tem a mesma
+    cor nos dois lugares, por construção e não por coincidência.
     """
     with st.container(border=True, key=f"cartao-{cartao.campo_id}"):
-        titulo, selo = st.columns([4.2, 1.6], vertical_alignment="top")
-        with titulo:
-            st.markdown(
-                f'<div class="campo-titulo">{html.escape(cartao.rotulo)}</div>'
-                f'<div class="campo-significado">{html.escape(cartao.significado)}</div>',
-                unsafe_allow_html=True,
-            )
-        with selo:
-            est = cartao.estilo
-            st.badge(est.rotulo, icon=est.icone, color=est.cor)
+        est = cartao.estilo
+        fundo, tinta = cores_do_selo(cartao.veredito)
+        st.markdown(
+            f'<div class="campo-cabeca">'
+            f'<div class="campo-icone">'
+            f'<span class="icone-material">{icone_do_campo(cartao.campo_id)}</span>'
+            f"</div>"
+            f'<div class="campo-texto">'
+            f'<div class="campo-titulo">{html.escape(cartao.rotulo)}</div>'
+            f'<div class="campo-significado">{html.escape(cartao.significado)}</div>'
+            f"</div>"
+            f'<span class="selo-veredito" style="background:{fundo};color:{tinta}">'
+            f"{html.escape(est.rotulo)}</span>"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
 
         colunas = st.columns(len(cartao.valores), gap="medium")
         for coluna, valor in zip(colunas, cartao.valores):
@@ -517,6 +587,47 @@ def estado_inicial() -> None:
 # ---------------------------------------------------------------------------
 
 
+def _composicao(comparacao) -> None:
+    """A comparação inteira como uma barra só, no lugar dos cinco números soltos.
+
+    Cinco cartões lado a lado davam os números certos e nenhuma noção de
+    proporção: "8, 1, 0, 1, 5" só vira informação depois que alguém soma. A
+    barra mostra a fatia de cada situação e deixa visível o que o projeto tem de
+    mais forte — que 5 dos 15 campos não são tratados por nenhuma das apólices.
+
+    As cores saem do mesmo mapa que pinta o selo de cada cartão, então a mesma
+    situação tem a mesma cor aqui e lá embaixo.
+    """
+    fatias = fatias_da_composicao(comparacao)
+    total = sum(f.quantidade for f in fatias)
+
+    barras = "".join(
+        f'<div class="composicao-seg{" composicao-seg-vazia" if not f.quantidade else ""}" '
+        f'style="flex:{f.quantidade or 0};background:{f.cor}" '
+        f'title="{html.escape(f.rotulo)}: {f.quantidade}"></div>'
+        for f in fatias
+    )
+    itens = "".join(
+        f'<span class="composicao-item{" zerada" if not f.quantidade else ""}">'
+        f'<span class="composicao-marca" style="background:{f.cor}"></span>'
+        f"{html.escape(f.rotulo)} <b>{f.quantidade}</b></span>"
+        for f in fatias
+    )
+
+    st.markdown(
+        f'<div class="composicao">'
+        f'<div class="composicao-topo">'
+        f'<span class="composicao-total">{total} campos comparados</span>'
+        f'<span class="composicao-nota">o dicionário do especialista inteiro — '
+        f"inclusive o que nenhuma das apólices trata</span>"
+        f"</div>"
+        f'<div class="composicao-barra">{barras}</div>'
+        f'<div class="composicao-legenda">{itens}</div>'
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+
+
 def aba_comparacao(
     comparacao,
     apolices: list[ApoliceExtraida],
@@ -524,17 +635,8 @@ def aba_comparacao(
     incluir_iguais: bool,
     situacoes: set[Veredito],
 ) -> None:
-    """Os números do topo e os cartões, agrupados por situação."""
-    for coluna, kpi in zip(st.columns(len(montar_kpis(comparacao)), gap="small"), montar_kpis(comparacao)):
-        with coluna:
-            st.metric(kpi.rotulo, kpi.valor, help=kpi.ajuda, icon=kpi.icone, border=True)
-
-    fora_das_duas = comparacao.resumo[Veredito.AUSENTE_EM_TODAS.value]
-    st.caption(
-        "Todos os campos do dicionário do especialista foram percorridos — é assim que "
-        f"a ausência aparece como ausência. {fora_das_duas} campo(s) não são tratados "
-        "por nenhuma das apólices."
-    )
+    """O resumo do topo e os cartões, agrupados por situação."""
+    _composicao(comparacao)
 
     cartoes = montar_cartoes(comparacao, apolices, apenas_relevantes=not incluir_iguais)
     if incluir_iguais:
@@ -745,30 +847,58 @@ def _cartao_apolice(resumo, caminho: Path | None) -> None:
     """O cartão de uma apólice: procedência, cobertura de campos e origem.
 
     O `key` é a âncora `st-key-cartao-*` que o CSS usa — ver `_cartao`.
+
+    A primeira página do PDF aparece como miniatura ao lado dos dados. É imagem
+    temática que não é enfeite: é o documento de verdade, o mesmo que o popover
+    *De onde veio* abre na página citada. O arquivo ausente simplesmente não
+    rende miniatura, e o cartão volta ao formato de uma coluna.
     """
+    miniatura = None
+    if caminho is not None and caminho.suffix.lower() == ".pdf":
+        # Escala baixa de propósito: é miniatura, e o render em escala alta fica
+        # no cache do popover, onde a página precisa ser legível.
+        miniatura = pagina_em_imagem(str(caminho), 1, 0.5)
+
     with st.container(border=True, key=f"cartao-apolice-{resumo.documento}"):
-        st.markdown(
-            f'<div class="apolice-nome">{html.escape(resumo.nome)}</div>'
-            f'<div class="apolice-arquivo">{html.escape(resumo.documento)}</div>'
-            f'<div class="apolice-fonte">{html.escape(resumo.fonte)}</div>',
-            unsafe_allow_html=True,
-        )
-        st.progress(
-            resumo.fracao_encontrada,
-            text=f"{resumo.encontrados} de {resumo.total} campos do dicionário",
-        )
-        st.caption(
-            f"{resumo.rastreaveis} valores com página e trecho de origem · "
-            + (
-                "arquivo original disponível para conferência"
-                if caminho
-                else "arquivo original não está nesta máquina"
+        if miniatura is None:
+            coluna_foto, coluna_dados = None, st.container()
+        else:
+            coluna_foto, coluna_dados = st.columns([1, 3.4], vertical_alignment="top")
+
+        with coluna_dados:
+            st.markdown(
+                f'<div class="apolice-nome">{html.escape(resumo.nome)}</div>'
+                f'<div class="apolice-arquivo">{html.escape(resumo.documento)}</div>'
+                f'<div class="apolice-fonte">{html.escape(resumo.fonte)}</div>',
+                unsafe_allow_html=True,
             )
-        )
-        if resumo.veio_de_exemplo:
-            st.badge("extração de exemplo — não é saída do sistema", icon="🧪", color="yellow")
-        elif resumo.todas_rastreaveis:
-            st.badge("todos os valores são rastreáveis", icon="📍", color="green")
+            st.progress(
+                resumo.fracao_encontrada,
+                text=f"{resumo.encontrados} de {resumo.total} campos do dicionário",
+            )
+            st.caption(
+                f"{resumo.rastreaveis} valores com página e trecho de origem · "
+                + (
+                    "arquivo original disponível para conferência"
+                    if caminho
+                    else "arquivo original não está nesta máquina"
+                )
+            )
+            if resumo.veio_de_exemplo:
+                st.badge("extração de exemplo — não é saída do sistema", icon="🧪", color="yellow")
+            elif resumo.todas_rastreaveis:
+                st.badge("todos os valores são rastreáveis", icon="📍", color="green")
+
+        if coluna_foto is not None:
+            with coluna_foto:
+                # A moldura da miniatura se ancora em `st-key-`, a mesma API
+                # pública que o cartão usa: `st.image` não aceita classe própria.
+                with st.container(key=f"miniatura-{resumo.documento}"):
+                    st.image(miniatura, width="stretch")
+                st.markdown(
+                    '<div class="miniatura-legenda">página 1 do PDF</div>',
+                    unsafe_allow_html=True,
+                )
 
 
 def _envio(banco: Banco) -> None:

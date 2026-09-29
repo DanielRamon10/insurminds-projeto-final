@@ -317,3 +317,269 @@ div[class*="st-key-cartao"] {
     color: #94A3B8;
     text-align: center;
 }
+
+/* ---------------------------------------------------------------------------
+   Identidade visual: arte do topo, composição das situações, ícone de campo
+   ---------------------------------------------------------------------------
+
+   Tudo aqui é HTML que nós mesmos escrevemos dentro de `st.markdown`, com uma
+   exceção que vale registrar: os ícones. O Streamlit já carrega a fonte
+   "Material Symbols Rounded" para desenhar os ícones dele, então reaproveitamos
+   a mesma fonte em vez de baixar um conjunto de ícones. O preço é que a regra
+   de `font-family` do topo desta folha NÃO pode alcançar estes spans — se
+   alcançar, a ligadura não acontece e o navegador escreve o nome do ícone por
+   extenso ("payments" no lugar do desenho). Daí a classe própria, `icone-material`,
+   que não contém "st-" e por isso escapa do seletor `[class*="st-"]`.
+   -------------------------------------------------------------------------- */
+
+.icone-material {
+    font-family: 'Material Symbols Rounded' !important;
+    font-feature-settings: 'liga' !important;
+    font-weight: normal;
+    font-style: normal;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    white-space: nowrap;
+    direction: ltr;
+    -webkit-font-smoothing: antialiased;
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* A arte do topo fica ao lado do texto e some quando a janela encolhe: em tela
+   estreita ela empurraria o título para duas linhas sem necessidade. */
+.hero-topo {
+    display: flex;
+    align-items: center;
+    gap: 26px;
+}
+
+.hero-texto {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* O `.hero-arte` é a div que embrulha o SVG — não o SVG. O markdown do
+   Streamlit não reconhece `<svg>` como bloco e o embrulha num `<p>`; com a div
+   em volta, quem é filho do flex é a div, e o `<p>` nunca aparece. */
+.hero-arte {
+    flex: 0 0 auto;
+    display: block;
+    line-height: 0;
+}
+
+.hero-arte svg {
+    display: block;
+}
+
+/* O `<p>` que o Streamlit ainda possa inserir dentro do hero traz margem
+   própria e desalinharia a arte: neutralizada aqui, uma vez só. */
+.hero-arte p,
+.hero-topo > p {
+    margin: 0;
+}
+
+@media (max-width: 900px) {
+    .hero-arte {
+        display: none;
+    }
+}
+
+/* --- A barra de composição -------------------------------------------------
+   Cinco números separados não dizem proporção: "8, 1, 0, 1, 5" só vira
+   informação quando alguém soma. A barra mostra a fatia de cada situação no
+   mesmo tom do selo do cartão, para a cor ser lida uma vez só. */
+
+.composicao {
+    margin: 4px 0 6px 0;
+    padding: 16px 18px;
+    border-radius: 16px;
+    background: #FFFFFF;
+    border: 1px solid #E7ECF1;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, .04);
+}
+
+.composicao-topo {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.composicao-total {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #0F172A;
+    letter-spacing: -.01em;
+}
+
+.composicao-nota {
+    font-size: .8rem;
+    color: #64748B;
+}
+
+.composicao-barra {
+    display: flex;
+    gap: 2px;
+    height: 14px;
+    margin-top: 12px;
+}
+
+.composicao-seg {
+    min-width: 3px;
+    border-radius: 3px;
+    transition: filter .15s ease;
+}
+
+.composicao-seg:hover {
+    filter: brightness(1.12);
+}
+
+/* Sem fatia não há barra: a situação de quantidade zero fica só na legenda, e
+   com o traço apagado, para não sugerir que existe um pedaço minúsculo. */
+.composicao-seg-vazia {
+    flex: 0 0 0 !important;
+    min-width: 0;
+}
+
+.composicao-legenda {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    margin-top: 11px;
+}
+
+.composicao-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: .8rem;
+    color: #475569;
+}
+
+.composicao-item b {
+    color: #0F172A;
+}
+
+.composicao-marca {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 3px;
+    flex: 0 0 auto;
+}
+
+.composicao-item.zerada {
+    color: #94A3B8;
+}
+
+.composicao-item.zerada .composicao-marca {
+    opacity: .35;
+}
+
+/* --- Ícone do campo, no cabeçalho do cartão -------------------------------- */
+
+.campo-cabeca {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.campo-icone {
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #EAF4F2;
+    color: #0E6E63;
+    border: 1px solid #D5E9E5;
+}
+
+.campo-icone .icone-material {
+    font-size: 20px;
+}
+
+.campo-texto {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* --- O selo do veredito, agora em pílula ----------------------------------
+   Era texto colorido solto no canto do cartão. Em pílula com fundo ele se lê
+   de longe — e o vídeo comprime a tela, o que apaga texto fino. */
+
+.selo-veredito {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: 0 0 auto;
+    padding: 4px 11px;
+    border-radius: 999px;
+    font-size: .76rem;
+    font-weight: 700;
+    letter-spacing: .01em;
+    white-space: nowrap;
+}
+
+/* --- Acento por seguradora nos valores ------------------------------------
+   As duas colunas do cartão eram idênticas: só o rótulo dizia qual era qual.
+   A cor de acento vem do Python (uma por seguradora, estável entre execuções)
+   e chega aqui como variável, com o teal como padrão se ela faltar. */
+
+.valor {
+    border-left: 3px solid var(--acento, #0D9488);
+}
+
+.valor-cabeca {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 5px;
+}
+
+.valor-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 5px;
+    font-size: .66rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    color: #FFFFFF;
+    background: var(--acento, #0E6E63);
+}
+
+.valor-seguradora {
+    font-size: .74rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #0E6E63;
+}
+
+/* --- Miniatura da primeira página do PDF ----------------------------------
+   `st.image` não aceita classe própria, então a moldura se ancora em
+   `st-key-miniatura-*` — a mesma API pública que o cartão usa. */
+
+div[class*="st-key-miniatura"] img {
+    border-radius: 10px;
+    border: 1px solid #E2E8F0;
+    background: #FFFFFF;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, .06);
+}
+
+.miniatura-legenda {
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-size: .7rem;
+    color: #94A3B8;
+    margin-top: 6px;
+    text-align: center;
+}
+

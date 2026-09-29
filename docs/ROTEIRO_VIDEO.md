@@ -92,8 +92,8 @@ O slide 8 do deck ("A plataforma em uso") espera três arquivos em
 
 | arquivo | o que entra no recorte | tamanho |
 | --- | --- | --- |
-| `01_comparacao.png` | o título `⚠️ Valores diferentes — 2 campos` e os dois cartões abaixo dele (Franquia/Retenção e Retroatividade), do começo do título ao fim do último cartão. Em coordenada de página: `y` 1785 → 2515 | 1140×730 |
-| `02_de_onde_veio.png` | o cartão Franquia/Retenção com o popover **De onde veio** aberto — o trecho de origem, o `📄 página 12` e a página do PDF renderizada, até a última linha do rodapé do popover. Role até o cartão ficar no meio da janela antes de capturar | 1140×1136 |
+| `01_comparacao.png` | o título `⚠️ Valores diferentes — 2 campos` e os dois cartões abaixo dele (Franquia/Retenção e Retroatividade), do começo do título ao fim do último cartão | 1140×712 |
+| `02_de_onde_veio.png` | o cartão Franquia/Retenção com o popover **De onde veio** aberto — o trecho de origem, o `📄 página 12` e a página do PDF renderizada, até a última linha do rodapé do popover. Role até o cartão ficar no meio da janela antes de capturar | 1140×1137 |
 | `03_tabela_csv.png` | a aba **Tabela completa**: o título `📋 A comparação inteira, campo a campo`, a tabela com a coluna *Situação* colorida e o botão **Baixar a comparação em CSV**. Do título ao fim do botão | 1140×589 |
 
 Como reproduzir:
@@ -103,8 +103,33 @@ Como reproduzir:
    `data/apolices.db` antes: `semear_exemplos` não sobrescreve extração de verdade.
 2. Janela de **1600 px de largura**. A coluna de conteúdo começa em `x = 380` e tem
    `1140 px` de largura (300 px de barra lateral + 80 px de margem de cada lado).
-3. Recorte as regiões acima. Só o `01` é ancorado na página; o `02` e o `03`
-   dependem de onde a tela está rolada, então recorte pelo conteúdo descrito.
+3. Recorte as três regiões acima, sempre com `x = 380` e `largura = 1140`.
+
+**Ancore no elemento, não em `y` fixo.** O recorte do `01` já foi descrito com
+`y` 1785 → 2515, e essa coordenada morreu na primeira vez que o layout mudou: o
+cabeçalho encolheu e a fileira de KPIs virou barra de composição, e o recorte
+passou a pegar o lugar errado **sem erro nenhum** — só um print torto. Meça o
+retângulo de `.secao` e do último cartão no DOM e recorte entre eles:
+
+```js
+const sec = [...document.querySelectorAll('.secao')]
+  .find(s => /Valores diferentes/i.test(s.innerText));
+const cartoes = [...document.querySelectorAll('[class*="st-key-cartao-"]')];
+const ultimo = cartoes.find(c =>
+  /Retroatividade/i.test(c.querySelector('.campo-titulo')?.innerText || ''));
+// recorte de sec.top - 14 até ultimo.bottom + 20, x = 380, largura = 1140
+```
+
+Vale para os três: o `02` sai do cartão da Franquia (`[class*="st-key-cartao-"]`
+cujo `.campo-titulo` casa `/Franquia/i`) até o fim do
+`[data-testid="stPopoverBody"]`, e o `03` do `.secao` da tabela até o fim do
+`[data-testid="stDownloadButton"]`.
+
+**Os prints envelhecem junto com a tela.** Eles são a única parte do deck que é
+uma foto: mexeu no visual, o deck passa a mostrar uma tela que não existe mais.
+Regerar é `python -m scripts.gerar_pitch`, que recola os três arquivos sozinho —
+mas **só depois de recapturar**. Vale conferir depois de qualquer mudança de
+`estilo.css` ou de `app.py`.
 
 Duas armadilhas que custam tempo:
 
@@ -112,5 +137,6 @@ Duas armadilhas que custam tempo:
   interno, então a página em si não cresce; um recorte que passe do fim da janela é
   cortado em silêncio e sai um PNG mutilado (o da comparação já saiu 1140×115 assim).
   Use uma janela de uns 3200 px de altura, ou role até a região antes de capturar.
+  Confira as dimensões do PNG depois de cada captura e **aborte** se não baterem.
 * **O popover do `02` é dinâmico.** Abra-o e espere a página do PDF renderizar antes
   de capturar — a imagem chega depois do resto do popover.

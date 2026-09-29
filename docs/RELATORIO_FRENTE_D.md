@@ -62,6 +62,15 @@ Uma frase por decisão, como o roteiro pede:
   projeto.
 * **CSV com separador `;` e BOM** — a saída é para ser aberta no Excel em
   português por quem trabalha com apólices, não por quem programa.
+* **A proporção antes do número** — a barra de composição substituiu a fileira de
+  KPIs porque "1, 0, 8, 1, 5" só vira informação depois que alguém soma; a barra
+  mostra o peso de cada situação e a legenda mantém o número exato, e as duas
+  saem do mesmo mapa de cores do selo do veredito, de modo que a mesma situação
+  tem a mesma cor em toda a tela por construção.
+* **A arte do cabeçalho é SVG escrito no código, não imagem no repositório** —
+  pesa menos de 1 KB, fica nítida em qualquer zoom (inclusive no vídeo
+  comprimido) e acompanha a paleta; um PNG não faria nenhum dos três, e o
+  enunciado não pede identidade visual própria.
 * **Pitch deck gerado por script** (`scripts/gerar_pitch.py`) — o nome do arquivo
   é exigido literalmente pelo enunciado e os números do deck saem do próprio
   código; gerado à mão, o texto envelheceria em silêncio. Há teste que confere os

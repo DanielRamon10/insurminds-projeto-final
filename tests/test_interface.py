@@ -27,15 +27,22 @@ from app.domain.exemplos import FONTE_EXEMPLO, carregar_exemplos
 from app.interface import apresentacao
 from app.interface.apresentacao import (
     ESTILOS,
+    ICONE_DE_CAMPO_DESCONHECIDO,
+    ICONE_DO_CAMPO,
+    PALETA_DE_RESERVA,
     SITUACOES_NO_FILTRO,
     TEXTO_AUSENTE,
     TEXTO_SEM_PAGINA,
     ValorNaTela,
     carregar_modulo_extracao,
+    cor_da_seguradora,
+    cores_do_selo,
     encontrar_extrator,
     estilo,
     exportar_csv,
     formatar_pagina,
+    icone_do_campo,
+    iniciais_da_seguradora,
     legenda,
     linhas_rastreabilidade,
     matriz_comparativa,
@@ -107,6 +114,68 @@ def test_apresentacao_nao_importa_streamlit():
     """É o que permite testar a apresentação sem subir a aplicação."""
     fonte = Path(apresentacao.__file__).read_text(encoding="utf-8")
     assert not re.search(r"^\s*(import|from)\s+streamlit", fonte, re.MULTILINE)
+
+
+def test_todo_campo_do_dicionario_tem_icone():
+    """O ícone do cartão sai do dicionário, não de uma lista paralela.
+
+    Se a frente de negócio acrescentar um campo, este teste falha em vez de a
+    tela cair no ícone genérico sem ninguém notar.
+    """
+    faltando = [
+        campo.id for campo in carregar_campos().campos if campo.id not in ICONE_DO_CAMPO
+    ]
+    assert not faltando, f"campos sem ícone: {faltando}"
+
+
+def test_nao_ha_icone_orfao():
+    """O outro lado: ícone para campo que não existe mais é lixo que confunde."""
+    ids = {campo.id for campo in carregar_campos().campos}
+    orfaos = sorted(chave for chave in ICONE_DO_CAMPO if chave not in ids)
+    assert not orfaos, f"ícones para campos inexistentes: {orfaos}"
+
+
+def test_campo_desconhecido_cai_no_icone_generico():
+    """Campo novo, extração antiga: a tela mostra algo, não um buraco."""
+    assert icone_do_campo("campo_que_ainda_nao_existe") == ICONE_DE_CAMPO_DESCONHECIDO
+
+
+def test_a_cor_da_seguradora_e_estavel_entre_execucoes():
+    """Cor por seguradora não pode depender do `hash()` da sessão.
+
+    O `hash()` de `str` no Python é aleatorizado por processo (`PYTHONHASHSEED`).
+    Uma cor derivada dele mudaria a cada reinício do Streamlit — e o mesmo
+    cartão apareceria de cor diferente na máquina de quem apresenta.
+    """
+    nomes = ["AIG Seguros Brasil S.A.", "Chubb", "Tokio Marine", "Mapfre"]
+    primeira = [cor_da_seguradora(n) for n in nomes]
+    segunda = [cor_da_seguradora(n) for n in nomes]
+    assert primeira == segunda
+    assert all(cor.startswith("#") and len(cor) == 7 for cor in primeira)
+
+
+def test_seguradora_desconhecida_ainda_recebe_cor_da_paleta():
+    """Sem marca reconhecida, a cor sai da paleta — nunca de um valor solto."""
+    cor = cor_da_seguradora("Seguradora Que Ninguém Conhece Ltda")
+    assert cor in PALETA_DE_RESERVA
+
+
+def test_as_iniciais_nao_sao_juridiques():
+    """"AIG Seguros Brasil S.A." tem de virar "AIG", não "ASB"."""
+    assert iniciais_da_seguradora("AIG Seguros Brasil S.A.") == "AIG"
+    assert iniciais_da_seguradora("Chubb") == "CH"
+    for nome in ["Tokio Marine", "Mapfre", "Zurich"]:
+        iniciais = iniciais_da_seguradora(nome)
+        assert 1 < len(iniciais) <= 3
+        assert iniciais.isupper()
+
+
+def test_o_selo_de_veredito_tem_fundo_e_tinta():
+    """Cada veredito tem par de cores; sem ele o selo sairia transparente."""
+    for veredito in Veredito:
+        fundo, tinta = cores_do_selo(veredito)
+        assert fundo.startswith("#") and tinta.startswith("#")
+        assert fundo != tinta
 
 
 # ---------------------------------------------------------------------------
@@ -970,15 +1039,144 @@ def test_app_streamlit_sobe_sem_excecao(tela):
     assert not tela.exception, [e.value for e in tela.exception]
 
 
+def _composicao_na_tela(tela) -> str | None:
+    """O HTML da barra de composição, como o Streamlit o entregou ao DOM."""
+    for bloco in tela.markdown:
+        if 'class="composicao"' in bloco.value:
+            return bloco.value
+    return None
+
+
 def test_a_tela_abre_com_a_comparacao_montada(tela):
     """Não basta não quebrar: a comparação precisa estar na tela."""
     assert len(tela.tabs) == 4
-    assert len(tela.metric) >= 5
+
+    # A linha de KPIs em `st.metric` deu lugar à barra de composição: em vez de
+    # cinco números soltos, uma barra proporcional com a mesma contagem. O
+    # contrato que este teste guarda continua o mesmo — o resumo da comparação
+    # tem de estar renderizado, e com os números do motor.
+    assert _composicao_na_tela(tela), "a barra de composição não foi renderizada"
 
     texto = "\n".join(m.value for m in tela.markdown)
     assert "Comparador de apólices D&amp;O" in texto
     assert "Limite Máximo de Indenização (LMI)" in texto
     assert "Por que importa:" in texto
+
+
+def test_a_barra_de_composicao_usa_as_contagens_do_motor(tela):
+    """Cada fatia da barra vale exatamente o que o motor contou.
+
+    O erro que este teste pega é o mais fácil de cometer num gráfico: a barra
+    fica bonita e some com um veredito, ou o total da legenda deixa de ser a
+    soma das fatias. Se uma fatia sumir, a comparação passa a mentir sobre si
+    mesma — que é o defeito que a frente D existe para não ter.
+    """
+    html = _composicao_na_tela(tela)
+    assert html
+
+    larguras = [int(n) for n in re.findall(r'class="composicao-seg[^"]*" style="flex:(\d+)', html)]
+    rotulos = re.findall(r"</span>([^<]+) <b>(\d+)</b></span>", html)
+    contagens = [int(n) for _, n in rotulos]
+
+    # O dicionário inteiro: toda comparação cobre os 15 campos, então as fatias
+    # têm de fechar no total, sem sobra nem falta.
+    assert sum(larguras) == len(carregar_campos().campos)
+    assert sum(contagens) == len(carregar_campos().campos)
+    assert larguras == contagens, "a barra e a legenda contam histórias diferentes"
+
+    # A fatia vazia não pode ocupar espaço: `flex:0` e a classe que a colapsa.
+    zeradas = re.findall(r'class="(composicao-seg composicao-seg-vazia)" style="flex:0', html)
+    assert len(zeradas) == contagens.count(0)
+
+
+def test_a_barra_de_composicao_rotula_cada_veredito_do_motor(tela):
+    """Nenhum veredito some da legenda — inclusive o que hoje dá zero."""
+    html = _composicao_na_tela(tela)
+    assert html
+
+    esperados = {
+        apresentacao.estilo(v).rotulo for v in Veredito if v is not Veredito.AUSENTE_EM_TODAS
+    }
+    esperados.add("Fora das duas")  # o rótulo próprio de AUSENTE_EM_TODAS na barra
+
+    rotulos = {r for r, _ in re.findall(r"</span>([^<]+) <b>(\d+)</b></span>", html)}
+    assert rotulos == esperados
+
+
+# ---------------------------------------------------------------------------
+# O cabeçalho — as duas armadilhas do markdown do Streamlit
+# ---------------------------------------------------------------------------
+
+
+def test_o_html_do_cabecalho_comeca_na_coluna_zero_e_sem_linha_em_branco():
+    """Recuo na primeira linha vira bloco de código, e o HTML aparece na tela.
+
+    Aconteceu de verdade: com o HTML do cabeçalho recuado dentro da função, as
+    tags `</div>` de fechamento saíram **escritas** no cabeçalho, dentro de um
+    retângulo branco, logo abaixo dos selos.
+
+    A regra do markdown é esta: quem decide se o bloco é HTML ou código é a
+    **primeira linha** — se ela começa com quatro espaços ou mais, o bloco
+    inteiro é código. E uma linha em branco **encerra** o bloco de HTML, de modo
+    que o que vier depois volta a ser markdown, com o recuo valendo outra vez.
+    Por isso o molde fica na coluna zero: o recuo de dentro (`<div>` aninhado)
+    não é problema, o de fora é.
+    """
+    from app.interface import app as interface
+
+    for nome, molde in [
+        ("_MOLDE_DO_CABECALHO", interface._MOLDE_DO_CABECALHO),
+        ("ARTE_DO_CABECALHO", interface.ARTE_DO_CABECALHO),
+    ]:
+        # A primeira linha com conteúdo tem de começar na coluna zero.
+        primeira = next(linha for linha in molde.splitlines() if linha.strip())
+        assert not primeira.startswith((" ", "\t")), (
+            f"{nome} começa recuado ({primeira[:40]!r}): o markdown leria o bloco "
+            f"inteiro como código"
+        )
+
+        # Nenhuma linha em branco no meio: ela fecharia o bloco de HTML.
+        corpo = molde.strip()
+        assert "\n\n" not in corpo, (
+            f"{nome} tem linha em branco no meio — o bloco de HTML termina ali e "
+            f"o que vem depois é lido como markdown"
+        )
+
+
+def test_a_arte_do_cabecalho_vem_embrulhada_em_div():
+    """`<svg>` solto é embrulhado num `<p>` e deixa de ser filho do flex.
+
+    O markdown do Streamlit reconhece `<div>` como bloco, mas não reconhece
+    `<svg>`: o que não conhece, ele embrulha num parágrafo. Com o `<p>` no meio,
+    o `flex` do `.hero-topo` deixa de valer para a arte e ela cai para baixo do
+    texto. A div em volta é o que mantém a arte ao lado do título.
+    """
+    from app.interface import app as interface
+
+    arte = interface.ARTE_DO_CABECALHO.strip()
+    assert arte.startswith('<div class="hero-arte">'), arte[:60]
+    assert arte.endswith("</div>")
+    assert "<svg" in arte
+
+    # E o molde coloca essa div como filha direta do `.hero-topo`.
+    molde = interface._MOLDE_DO_CABECALHO
+    assert "{arte}" in molde
+    dentro = molde.split('<div class="hero-topo">')[1].split("</div>\n  </div>")[0]
+    assert "{arte}" in dentro, "a arte não está dentro do .hero-topo"
+
+
+def test_o_cabecalho_monta_o_html_com_a_arte_e_o_contexto():
+    """O `format` precisa achar os dois campos — um `KeyError` aqui é tela branca."""
+    from app.interface import app as interface
+
+    sem_escolha = interface._MOLDE_DO_CABECALHO.format(
+        contexto="Selecione duas apólices na barra lateral para começar",
+        arte=interface.ARTE_DO_CABECALHO,
+    )
+    assert "hero-topo" in sem_escolha
+    assert "hero-arte" in sem_escolha
+    assert "Comparador de apólices D&amp;O" in sem_escolha
+    assert "{" not in sem_escolha.split("<style")[0], "sobrou chave sem substituir"
 
 
 def test_a_tela_declara_que_a_comparacao_usa_exemplos(tela):

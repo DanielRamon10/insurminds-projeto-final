@@ -87,6 +87,51 @@ que um de duas; igualar isso exigiria encadear `display: flex` em containers
 internos do Streamlit, que é exatamente a dependência que deixou a regra do
 cartão morta. Não vale o risco por 1 cartão em 9.
 
+### A passada de acabamento
+
+Quatro acréscimos, todos construídos sobre as mesmas duas âncoras públicas
+(`st-key-` e SVG escrito à mão) — nenhum deles volta a depender de `data-testid`:
+
+- **A arte do cabeçalho** (`ARTE_DO_CABECALHO`): dois documentos e o escudo da
+  conferência, em SVG de ~1 KB, escrito no `app.py`. É SVG e não PNG porque fica
+  nítido em qualquer zoom (inclusive no vídeo comprimido), acompanha a paleta e
+  não engorda o repositório. **O `<div>` em volta não é enfeite:** o markdown do
+  Streamlit reconhece `<div>` como bloco, mas não reconhece `<svg>` — e o que
+  não reconhece, ele embrulha num `<p>`. Com o `<p>` no meio, a arte deixava de
+  ser filha direta do flex `.hero-topo` e caía para baixo do texto.
+- **A barra de composição** substituiu a fileira de `st.metric`. Cinco números
+  soltos ("1, 0, 8, 1, 5") só viram informação depois que alguém soma; a barra
+  mostra a proporção de cada situação e a legenda mantém o número exato. As
+  cores saem do mesmo mapa que pinta o selo do veredito, então a mesma situação
+  tem a mesma cor nos dois lugares **por construção**, não por coincidência. A
+  fatia de quantidade zero recebe `flex: 0` e some, em vez de virar um traço de
+  3px.
+- **O ícone do campo** vem de `ICONE_DO_CAMPO`, casado com o dicionário: um
+  teste falha se a frente de negócio acrescentar um campo sem ícone, e outro
+  falha se sobrar ícone de campo que não existe mais. O `font-family` do
+  Material Symbols é restaurado por uma regra própria, porque a folha alcança
+  todo elemento do Streamlit e a ligadura do ícone depende da fonte.
+- **A miniatura da página 1** do PDF, na aba *Apólices*: `st.image` não aceita
+  classe própria, então a moldura se ancora em `st-key-miniatura-*`, a mesma API
+  pública do cartão. Só aparece quando o arquivo original está na máquina.
+
+### A armadilha do markdown, que custou um print
+
+O cabeçalho chegou a exibir as tags `</div>` **escritas na tela**, dentro de um
+retângulo branco, logo abaixo dos selos. Não era CSS: o markdown do Streamlit lê
+a string antes de o navegador vê-la, e linha com quatro espaços ou mais vira
+bloco de código. Com o HTML do cabeçalho recuado dentro da função, as tags de
+fechamento deixaram de ser HTML.
+
+Desrecuar depois com `textwrap.dedent` **não** resolve — o SVG interpolado já
+está na coluna zero, então não há prefixo comum para tirar e o recuo continua
+lá. O molde ficou como constante de módulo (`_MOLDE_DO_CABECALHO`), na coluna
+zero, e é montado com `.format()`. A regra que o teste guarda: a **primeira**
+linha do bloco decide se ele é HTML ou código, e uma linha em branco **encerra**
+o bloco — o recuo de dentro (`<div>` aninhado) não é problema, o de fora é.
+Os outros blocos de HTML do `app.py` já nasciam na coluna zero, por concatenação
+de f-strings, e não passaram por isso.
+
 ## Contrato com a frente B (extração com LLM)
 
 A extração das cláusulas **já está publicada**: `extrair_apolice`, em
