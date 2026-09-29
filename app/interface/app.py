@@ -278,7 +278,7 @@ ARTE_DO_CABECALHO = """
 #: resolve: o SVG interpolado já está na coluna zero, então o `dedent` não tem
 #: prefixo comum para tirar e o recuo continua lá.
 _MOLDE_DO_CABECALHO = """
-<div class="hero">
+<div class="hero notranslate" translate="no">
   <div class="hero-topo">
     <div class="hero-texto">
       <h1>Comparador de apólices D&amp;O</h1>
@@ -395,6 +395,103 @@ def _prova_de_origem(valor: ValorNaTela, caminho: Path | None) -> None:
     st.image(imagem, caption=f"página {valor.pagina} de {caminho.name}", width="stretch")
 
 
+SVGS_DO_CAMPO: dict[str, str] = {
+    "limite_maximo_indenizacao": (
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+        '<rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/>'
+        '<path d="M6 12h.01M18 12h.01"/></svg>'
+    ),
+    "franquia": (
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+        '<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/>'
+        '<path d="M14 8H8M16 12H8M12 16H8"/></svg>'
+    ),
+    "vigencia": (
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+        '<path d="M8 2v4M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>'
+        '</svg>'
+    ),
+    "retroatividade": (
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+        '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>'
+        '<path d="M3 3v5h5M12 7v5l4 2"/></svg>'
+    ),
+    "prazo_complementar": (
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+        '<path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22'
+        'M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>'
+    ),
+    "ambito_geografico": (
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+        '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20M2 12h20"/>'
+        '</svg>'
+    ),
+    "definicao_segurado": (
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+        '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>'
+        '<path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
+    ),
+    "custos_defesa": (
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+        '<path d="m14 13-7.5 7.5c-.83.83-2.17.83-3 0 0 0 0 0 0 0a2.12 2.12 0 0 1 0-3L11 10'
+        'M16 16l6-6M8 8l6-6M9 7l8 8M21 11l-8-8"/></svg>'
+    ),
+    "multas_administrativas": (
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+        '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>'
+        '<path d="M14 2v6h6M12 18v-6M9 15h6"/></svg>'
+    ),
+    "exclusao_atos_dolosos": (
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+        '<circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 14.14 14.14"/></svg>'
+    ),
+    "exclusao_ambiental": (
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+        '<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>'
+        '<path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>'
+    ),
+    "clausula_rescisao": (
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+        '<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg>'
+    ),
+    "definicao_reclamacao": (
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+        '<path d="m3 11 18-5v12L3 14v-3zM11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>'
+    ),
+    "sublimites": (
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+        '<path d="M12 20V10M18 20V4M6 20v-4"/></svg>'
+    ),
+    "cobertura_investigacoes": (
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+        '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>'
+    ),
+}
+
+
+def render_icone_campo(campo_id: str) -> str:
+    """Renderiza o ícone do campo em SVG nítido ou Material Symbol se desconhecido."""
+    if svg := SVGS_DO_CAMPO.get(campo_id):
+        return svg
+    nome = icone_do_campo(campo_id)
+    return f'<span class="icone-material notranslate" translate="no">{nome}</span>'
+
+
 def _cartao(cartao: CartaoDiferenca, documentos: dict[str, Path | None]) -> None:
     """Um campo, com o valor de cada apólice lado a lado (D.2 e D.3).
 
@@ -410,10 +507,11 @@ def _cartao(cartao: CartaoDiferenca, documentos: dict[str, Path | None]) -> None
     with st.container(border=True, key=f"cartao-{cartao.campo_id}"):
         est = cartao.estilo
         fundo, tinta = cores_do_selo(cartao.veredito)
+        icone_html = render_icone_campo(cartao.campo_id)
         st.markdown(
-            f'<div class="campo-cabeca">'
-            f'<div class="campo-icone">'
-            f'<span class="icone-material">{icone_do_campo(cartao.campo_id)}</span>'
+            f'<div class="campo-cabeca notranslate" translate="no">'
+            f'<div class="campo-icone notranslate" translate="no">'
+            f"{icone_html}"
             f"</div>"
             f'<div class="campo-texto">'
             f'<div class="campo-titulo">{html.escape(cartao.rotulo)}</div>'
