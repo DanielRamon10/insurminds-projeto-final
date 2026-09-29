@@ -26,6 +26,7 @@ if hasattr(sys.stdout, "reconfigure"):
 RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ))
 
+from PIL import Image  # noqa: E402
 from pptx import Presentation  # noqa: E402
 from pptx.dml.color import RGBColor  # noqa: E402
 from pptx.enum.shapes import MSO_SHAPE  # noqa: E402
@@ -33,6 +34,14 @@ from pptx.enum.text import MSO_ANCHOR, PP_ALIGN  # noqa: E402
 from pptx.util import Emu, Inches, Pt  # noqa: E402
 
 DESTINO = RAIZ / "Projeto_Final_Artefatos" / "InsurMinds_Projeto_Final.pptx"
+
+#: Onde moram os recortes da interface que o slide de demonstração cola.
+PRINTS = RAIZ / "Projeto_Final_Artefatos" / "prints"
+
+#: Um arquivo por legenda do slide, na mesma ordem de `legendas`. O teste
+#: `test_ha_um_print_por_legenda` casa os dois tamanhos: se a lista desalinhar,
+#: o slide mostra a tela errada embaixo do texto errado.
+ARQUIVOS_DE_PRINT = ("01_comparacao.png", "02_de_onde_veio.png", "03_tabela_csv.png")
 
 # ---------------------------------------------------------------------------
 # Paleta e medidas — as mesmas cores da interface, para o deck e a tela
@@ -51,6 +60,7 @@ VERMELHO = RGBColor(0xDC, 0x26, 0x26)
 ROXO = RGBColor(0x7C, 0x3A, 0xED)
 VERDE_OK = RGBColor(0x16, 0xA3, 0x4A)
 LARANJA = RGBColor(0xB4, 0x53, 0x09)
+BORDA = RGBColor(0xE2, 0xE8, 0xF0)
 
 LARGURA = Inches(13.333)
 ALTURA = Inches(7.5)
@@ -229,8 +239,26 @@ def slide_fluxo(apresentacao, dados: dict, numero: int) -> None:
     rodape(slide, numero)
 
 
+def _medidas_da_imagem(imagem: Path, largura: int, altura: int) -> tuple[int, int]:
+    """O tamanho que a imagem ocupa dentro do espaço, sem distorcer o aspecto."""
+    with Image.open(imagem) as figura:
+        proporcao = figura.width / figura.height
+    if proporcao >= largura / altura:      # mais larga que o espaço: manda a largura
+        return largura, int(largura / proporcao)
+    return int(altura * proporcao), altura  # mais alta: manda a altura
+
+
 def slide_prints(apresentacao, dados: dict, numero: int) -> None:
-    """Espaços para os prints da interface, com a instrução do que recortar."""
+    """Os recortes da interface, com a legenda embaixo de cada um.
+
+    As imagens ficam em `Projeto_Final_Artefatos/prints/` (ver
+    `ARQUIVOS_DE_PRINT`), recortadas com o app rodando — as regiões de cada
+    recorte estão em `docs/ROTEIRO_VIDEO.md`. Quando o arquivo não existe, o
+    slide desenha a caixa vazia com a instrução: é o estado de um clone
+    recém-baixado, e quem apresenta vê o que falta em vez de ver um slide
+    quebrado. Ou as três telas estão coladas, ou as três caixas estão vazias —
+    nunca as duas coisas no mesmo slide.
+    """
     slide = slide_novo(apresentacao)
     cabecalho(slide, dados["kicker"], dados["titulo"])
     chamada_do_slide(slide, dados)
@@ -239,17 +267,34 @@ def slide_prints(apresentacao, dados: dict, numero: int) -> None:
     largura = Inches((13.333 - 1.4 - 0.3 * (len(legendas) - 1)) / len(legendas))
     for i, legenda in enumerate(legendas):
         esquerda = Inches(0.7) + (largura + Inches(0.3)) * i
-        retangulo(slide, esquerda, Inches(2.4), largura, Inches(2.9), CLARO)
-        texto(slide, esquerda + Inches(0.2), Inches(3.35), largura - Inches(0.4),
-              Inches(1.4), legenda, tamanho=12, cor=CINZA,
+        arquivo = PRINTS / ARQUIVOS_DE_PRINT[i]
+
+        if arquivo.exists():
+            largura_foto, altura_foto = _medidas_da_imagem(arquivo, largura, Inches(2.6))
+            foto_x = esquerda + int((largura - largura_foto) / 2)
+            foto_y = Inches(2.25) + int((Inches(2.6) - altura_foto) / 2)
+            # A moldura vai antes da imagem: quem entra depois fica por cima.
+            retangulo(slide, foto_x - Inches(0.02), foto_y - Inches(0.02),
+                      largura_foto + Inches(0.04), altura_foto + Inches(0.04), BORDA)
+            slide.shapes.add_picture(str(arquivo), foto_x, foto_y,
+                                     width=largura_foto, height=altura_foto)
+        else:
+            retangulo(slide, esquerda, Inches(2.25), largura, Inches(2.6), CLARO)
+            texto(slide, esquerda, Inches(3.35), largura, Inches(0.4),
+                  f"print {i + 1} — colar aqui", tamanho=10, cor=CINZA,
+                  alinhamento=PP_ALIGN.CENTER, espaco=0)
+
+        titulo, _, corpo = legenda.partition("\n\n")
+        texto(slide, esquerda, Inches(4.98), largura, Inches(0.3),
+              titulo, tamanho=12, cor=TEAL, negrito=True,
               alinhamento=PP_ALIGN.CENTER, espaco=0)
-        texto(slide, esquerda, Inches(5.4), largura, Inches(0.4),
-              f"print {i + 1} — colar aqui", tamanho=10, cor=CINZA,
+        texto(slide, esquerda + Inches(0.15), Inches(5.26), largura - Inches(0.3),
+              Inches(1.05), corpo, tamanho=11, cor=CINZA,
               alinhamento=PP_ALIGN.CENTER, espaco=0)
 
     if nota := dados.get("nota"):
-        texto(slide, Inches(0.7), Inches(6.05), Inches(11.9), Inches(0.7),
-              nota, tamanho=11, cor=CINZA, espaco=0)
+        texto(slide, Inches(0.7), Inches(6.4), Inches(11.9), Inches(0.5),
+              nota, tamanho=10, cor=CINZA, espaco=0)
     rodape(slide, numero)
 
 
@@ -314,11 +359,23 @@ def main() -> int:
     titulo = "\no que ainda falta neste deck"
     print(titulo)
     print("-" * len(titulo.strip()))
-    print("  1. os tres prints do slide de demonstracao (recorte a interface rodando:")
-    print("     `streamlit run app/interface/app.py`)")
-    print("  2. o problema de negocio na voz do Paulo Henrique, corretor do grupo —")
-    print("     o slide 2 esta escrito com o que o roteiro registra; ele confirma ou reescreve")
-    print("  3. a arquitetura revisada pelo Daniel, dono das frentes A e C")
+
+    # O item dos prints só aparece enquanto faltar algum: o deck se declara
+    # incompleto, não fica com um "a fazer" cravado que já foi feito.
+    faltam = [n for n in ARQUIVOS_DE_PRINT if not (PRINTS / n).exists()]
+    if faltam:
+        print(f"  1. {len(faltam)} dos {len(ARQUIVOS_DE_PRINT)} prints do slide de demonstracao:")
+        for nome in faltam:
+            print(f"     - Projeto_Final_Artefatos/prints/{nome}")
+        print("     recorte a interface rodando: `streamlit run app/interface/app.py`")
+        print("     as regioes de cada recorte estao em docs/ROTEIRO_VIDEO.md")
+        print("  2. o problema de negocio na voz do Paulo Henrique, corretor do grupo —")
+        print("     o slide 2 esta escrito com o que o roteiro registra; ele confirma ou reescreve")
+        print("  3. a arquitetura revisada pelo Daniel, dono das frentes A e C")
+    else:
+        print("  1. o problema de negocio na voz do Paulo Henrique, corretor do grupo —")
+        print("     o slide 2 esta escrito com o que o roteiro registra; ele confirma ou reescreve")
+        print("  2. a arquitetura revisada pelo Daniel, dono das frentes A e C")
     print("\n  editar texto: bloco CONTEUDO, no fim de scripts/gerar_pitch.py")
     print("  regerar:      python -m scripts.gerar_pitch")
     return 0
@@ -394,8 +451,8 @@ CONTEUDO: list[dict] = [
              "só onde falta texto embutido e não derruba o lote quando um arquivo falha.",
              VERDE),
             ("B", "EXTRAÇÃO", "Interpreta o texto com LLM, apoiada no dicionário de campos, e "
-             "devolve cada valor com página e trecho de origem. Em desenvolvimento.",
-             TEAL),
+             "devolve cada valor com página e trecho de origem. Publicada; exige chave de "
+             "modelo no `.env` para rodar.", TEAL),
             ("C", "ARMAZENAMENTO E COMPARAÇÃO", "Guarda as apólices processadas em SQLite e "
              "compara campo a campo, sem modelo de linguagem: mesma entrada, mesma saída.",
              ESCURO),
@@ -506,7 +563,7 @@ CONTEUDO: list[dict] = [
         "tipo": "numeros",
         "kicker": "o que a comparação aponta",
         "titulo": "O resultado, campo a campo",
-        "chamada": "Saída do motor de comparação na demonstração registrada no repositório.",
+        "chamada": "Saída do motor de comparação sobre as extrações de exemplo da demonstração.",
         "numeros": [
             ("3", "proteções ausentes em uma delas",
              "sublimites, multas administrativas e cobertura para investigações", LARANJA),
@@ -519,10 +576,11 @@ CONTEUDO: list[dict] = [
              "100% do que foi encontrado aponta página e trecho: nenhum número solto", VERDE_OK),
         ],
         "nota": (
-            "Medido sobre as extrações de exemplo, enquanto a frente B (extração com LLM) não "
-            "está pronta. Ingestão, banco, comparação e rastreabilidade são reais e estão no "
-            "código; quando a extração real entrar, a tela não muda — é isso que os exemplos "
-            "garantiram."
+            "Medido sobre as extrações de exemplo, porque os campos numéricos não têm "
+            "valor nas condições gerais comparadas — elas remetem cada um à Especificação "
+            "da Apólice, como o slide de limitações documenta. Ingestão, banco, comparação "
+            "e rastreabilidade são reais e estão no código; trocar a fonte dos campos não "
+            "muda a tela — é isso que os exemplos garantiram."
         ),
     },
     {
@@ -557,9 +615,11 @@ CONTEUDO: list[dict] = [
         "chamada": "Cada frente registrou onde a própria parte não aguenta — é o que este slide documenta.",
         "cor": LARANJA,
         "topicos": [
-            ("🚧", "Extração com LLM em desenvolvimento",
-             "A frente B ainda não está pronta: a demonstração usa extrações de exemplo, "
-             "identificadas como tal na tela, no console e no relatório."),
+            ("🚧", "Sem a especificação, não há número para comparar",
+             "As condições gerais remetem LMI, franquia, vigência, retroatividade e "
+             "sublimites à Especificação da Apólice, que não está no lote. A extração "
+             "com modelo de linguagem acha a cláusula e cita a página; comparar número "
+             "fica para quando ela entrar."),
             ("🔑", "Dependência de chave e cota",
              "Sem chave configurada não há extração; a cascata de provedores ameniza o "
              "limite de cota, não o elimina."),

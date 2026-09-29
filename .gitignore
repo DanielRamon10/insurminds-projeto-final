@@ -16,3 +16,7 @@ Thumbs.db
 docs/*.html
 *.db
 data/apolices.db
+
+# Pacote gerado por `python -m scripts.gerar_entrega` — sai do código, não entra
+# no repositório: 2,2 MB de arquivo que se refaz em um comando.
+InsurMinds_Projeto_Final_codigo_fonte.zip
