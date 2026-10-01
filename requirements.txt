@@ -24,7 +24,10 @@ streamlit>=1.40
 # A interface importa pandas direto (tabela colorida da comparação). Ele já vem
 # instalado como dependência do Streamlit, mas fica declarado aqui: depender de
 # pacote por tabela é o tipo de coisa que quebra numa instalação limpa.
-pandas>=2.0
+# O teto em 3 nao e capricho: o Smart App Control do Windows 11 recusa binario
+# sem reputacao, e a 3.0 recem-lancada e bloqueada — a interface nao abre na
+# maquina de quem avalia. A 2.2 roda.
+pandas>=2.0,<3
 
 # Apresentação (pitch deck — nome de arquivo exigido pelo enunciado)
 python-pptx>=1.0
