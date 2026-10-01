@@ -36,10 +36,10 @@ Licensed under the **MIT license** (see [LICENSE](LICENSE)).
 | --- | --- |
 | Document ingestion and OCR | done |
 | D&O field dictionary | done |
-| Clause extraction with an LLM | in progress |
+| Clause extraction with an LLM | published (`extrair_apolice`, in `app.agents`); the numeric fields carry no value in the general conditions, which refer each one to the Policy Specification |
 | Storage and comparison | done |
-| Prose comparison report | waiting on extraction |
-| Demo interface | in progress |
+| Prose comparison report | waiting on extraction (C.4) |
+| Demo interface | done |
 
 **Deadline: October 6, 2026, 11:59 PM.** The full roadmap lives in
 [`docs/ROTEIRO_PROJETO_FINAL.md`](docs/ROTEIRO_PROJETO_FINAL.md).

@@ -36,10 +36,10 @@ Licenciado sob a **licença MIT** (ver [LICENSE](LICENSE)).
 | --- | --- |
 | Ingestão de documentos e OCR | pronta |
 | Dicionário de campos D&O | pronto |
-| Extração das cláusulas com LLM | em desenvolvimento |
+| Extração das cláusulas com LLM | publicada (`extrair_apolice`, em `app.agents`); os campos numéricos não têm valor nas condições gerais — elas remetem cada um à Especificação da Apólice |
 | Armazenamento e comparação | pronto |
-| Relatório comparativo em prosa | aguarda a extração |
-| Interface de demonstração | em desenvolvimento |
+| Relatório comparativo em prosa | aguarda a extração (C.4) |
+| Interface de demonstração | pronta |
 
 **Prazo de entrega: 06/10/2026 às 23h59.** O roteiro completo está em
 [`docs/ROTEIRO_PROJETO_FINAL.pt-BR.md`](docs/ROTEIRO_PROJETO_FINAL.pt-BR.md).

@@ -33,6 +33,10 @@ INCLUIR = [
     "data",
     "docs",
     "Projeto_Final_Artefatos",
+    # O tema da frente D mora aqui: sem `.streamlit/config.toml` o app abre com
+    # as cores padrão do Streamlit e a interface perde a cara que a banca vê.
+    # Não há credencial neste arquivo — `secrets.toml` continua em EXCLUIR_ARQUIVOS.
+    ".streamlit",
     "requirements.txt",
     ".env.example",
     ".gitignore",
