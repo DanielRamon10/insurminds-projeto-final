@@ -20,14 +20,22 @@ streamlit run app/interface/app.py
 3. Confira que a barra lateral mostra **2 apólices no banco** e que as duas estão
    selecionadas. Se algo estiver estranho, clique em *Recarregar as extrações de
    exemplo*.
-4. **Confira qual extração está na tela.** Os números narrados neste roteiro
-   (3 ausentes em uma, 2 diferentes, 6 divergentes, 4 iguais, 27 com origem) são
-   os das **extrações de exemplo**. Se o banco desta máquina tiver as extrações
-   reais de `data/extracoes/` — as que `python -m scripts.carregar_extracoes`
-   grava —, a tela mostra outros números (1 / 0 / 8 / 1, 19 com origem) e a
-   narração não bate com a imagem. O botão *Recarregar as extrações de exemplo*
-   **não** resolve isso: ele nunca sobrescreve extração real, de propósito. Para
-   gravar sobre os exemplos, apague `data/apolices.db` e reabra o aplicativo.
+4. **Grave sobre a extração real.** Rode antes:
+
+   ```
+   python -m scripts.carregar_extracoes
+   ```
+
+   Os números narrados neste roteiro são os da extração real: 1 campo ausente em
+   uma das apólices, 8 redações divergentes, 1 igual, 19 valores com origem
+   registrada. A tela não mostra o selo de exemplo, e a narração pode dizer
+   "apólices reais" sem ressalva.
+
+   Gravar sobre as extrações de exemplo também funciona — os números seriam
+   3 / 2 / 6 / 4 e 27 com origem —, mas aí a tela exibe o selo *extração de
+   exemplo* em três lugares, e dizer "apólices reais" por cima dele é pior do que
+   não ter selo nenhum. Se for esse o caminho, troque os números abaixo **e** diga
+   na narração que são exemplos.
 5. Grave a **tela primeiro, narração depois** — é a forma mais fácil de acertar o
    tempo. Se cada integrante narra sua parte, combine o timestamp exato de entrada.
 6. Ferramenta: OBS Studio (grátis) ou Xbox Game Bar (`Win` + `G`) no Windows.
@@ -38,13 +46,13 @@ streamlit run app/interface/app.py
 | --- | --- | --- | --- |
 | 0:00–0:30 | Slide da capa | Paulo Henrique | O problema: comparar duas apólices D&O é leitura de dezenas de páginas em linguagem jurídica, feita por especialista, e a mesma cláusula aparece com nomes diferentes em cada seguradora. Um exemplo real: duas apólices com o mesmo limite máximo podem ter franquias de R$ 50 mil e R$ 80 mil. |
 | 0:30–1:15 | Slide de arquitetura | Daniel | O que foi construído: quatro etapas — ingestão que lê PDF e imagem, extração das cláusulas com IA generativa, armazenamento e comparação determinística, e a interface. Cada etapa conversa com a próxima por contratos de dados; a comparação não usa modelo de linguagem justamente para ser reprodutível. |
-| 1:15–2:00 | Aba **Comparação** | Paulo Roberto | Apresente a tela aberta: duas apólices reais (Chubb e AIG), 15 campos do dicionário do especialista, e os números do topo — 3 proteções ausentes em uma delas, 2 valores diferentes, 6 redações divergentes, 4 iguais. Diga o que significa cada número. |
-| 2:00–2:50 | Aba **Comparação**, rolando os cartões | Paulo Roberto | Mostre um cartão de cada tipo: a franquia (R$ 50 mil contra R$ 80 mil), sublimites ausentes na AIG, e uma exclusão com redação divergente. Leia em voz alta a frase "por que importa" de um deles — ela vem do corretor, não do modelo. |
+| 1:15–2:00 | Aba **Comparação** | Paulo Roberto | Apresente a tela aberta: duas apólices reais (Chubb e AIG), 15 campos do dicionário do especialista, e os números do topo — 1 proteção que só uma delas traz, 8 redações divergentes, 1 campo igual. Explique que "redação divergente" quer dizer que as duas tratam do assunto com palavras diferentes, e que o sistema se recusa a afirmar diferença sem ter como provar. |
+| 2:00–2:50 | Aba **Comparação**, rolando os cartões | Paulo Roberto | Mostre os **Custos de Defesa**, que é a diferença mais material entre as duas: na AIG estão incluídos no limite da apólice; na Chubb exigem contratação de cobertura adicional. Mostre também o prazo complementar, que só a Chubb traz (36 meses). Leia em voz alta a frase "por que importa" de um deles — ela vem do corretor, não do modelo. |
 | 2:50–3:25 | Botão **De onde veio** | Paulo Roberto | O ponto mais importante do vídeo: clique em *De onde veio*, mostre o trecho de origem, a página citada e **a página do PDF renderizada**. Diga: nenhum número aparece sem a página e o trecho de onde saiu. |
 | 3:25–3:50 | Aba **Tabela completa** | Paulo Roberto | A mesma comparação em tabela, com a situação colorida e o CSV pronto para o Excel — é o que o corretor leva embora. |
 | 3:50–4:15 | Aba **Apólices e envio** | Paulo Roberto | Mostre o cartão da apólice (campos encontrados, rastreabilidade) e o envio de documento. **Diga o que está pendente**: a ingestão lê o documento e devolve páginas, OCR e texto, e a extração com LLM está publicada em `app.agents` — o que falta é chave de modelo no `.env`. E explique por que os campos numéricos aparecem sem valor: as condições gerais remetem LMI, franquia, vigência, retroatividade e sublimites à Especificação da Apólice, que não está no lote — a tela mostra a ressalva do extrator com a página da cláusula, em vez de dizer que a apólice não trata do assunto. |
-| 4:15–4:40 | Slide de resultados e de limites | Nicole ou Daniel | Resultados e limites: 70 e 72 páginas lidas, ~37 mil tokens por apólice, 27 valores com origem registrada, 100% rastreáveis. Diga que a comparação roda hoje sobre extrações de exemplo identificadas como tal, e que o motor de regras é o mesmo que vai comparar a extração real. |
-| 4:40–4:55 | Slide da equipe | Paulo Roberto | Fechamento: o que cada frente entregou e o que vem depois (redator automático, histórico de versões). "A diferença entre duas apólices deixa de ser uma leitura de horas e passa a ser uma tela com prova de origem." |
+| 4:15–4:40 | Slide de resultados e de limites | Nicole ou Daniel | Resultados e limites: 70 e 72 páginas lidas, ~60 mil tokens por apólice na chamada ao modelo, 19 valores com origem registrada — 100% do que foi encontrado. Diga a limitação que explica o projeto: os campos numéricos saem vazios porque condições gerais são o documento-modelo da seguradora e os valores pertencem à Especificação da Apólice, individual de cada contratante. |
+| 4:40–4:55 | Slide da equipe | Paulo Roberto | Fechamento: o que cada frente entregou e o que vem depois (dar ao redator a cláusula inteira em vez do recorte, aceitar a Especificação da Apólice, histórico de versões). "A diferença entre duas apólices deixa de ser uma leitura de horas e passa a ser uma tela com prova de origem." |
 
 ## Plano B — se o Streamlit não subir
 
