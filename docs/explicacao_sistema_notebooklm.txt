@@ -1,0 +1,486 @@
+================================================================================
+INSURMINDS — PLATAFORMA DE ANÁLISE E COMPARAÇÃO INTELIGENTE DE APÓLICES D&O
+DOCUMENTO COMPLETO DE EXPLICAÇÃO DO SISTEMA PARA O NOTEBOOKLM
+Projeto Final · Curso de Inteligência Artificial Aplicada · Instituto I2A2
+================================================================================
+
+Este documento foi elaborado com o máximo rigor técnico, conceitual e de negócio
+para servir de base de conhecimento no Google NotebookLM, permitindo a geração
+de roteiros de vídeo explicativo, podcasts em áudio (Audio Overview), resumos
+executivos e defesas perante bancas avaliadoras.
+
+--------------------------------------------------------------------------------
+SUMÁRIO EXECUTIVO
+--------------------------------------------------------------------------------
+1. Identificação do Projeto e Equipe
+2. O Problema de Negócio: O Labirinto do Seguro D&O
+3. Filosofia da Solução: O que é Generativo vs. O que é Determinístico
+4. Arquitetura do Sistema em Quatro Camadas Desacopladas
+   - Camada 1: Ingestão Híbrida Inteligente (PDF + OCR)
+   - Camada 2: Extração Estruturada e Validação Anti-Alucinação
+   - Camada 3: Armazenamento e Motor de Comparação Determinístico
+   - Camada 4: Interface do Usuário e Auditoria Visual
+5. Dicionário de Negócio do Especialista e os 15 Campos Vitais
+6. As Três Regras de Ouro Contra Alucinações de IA
+7. A Grande Lição Prática: Condições Gerais vs. Especificação da Apólice
+8. Evidências Empíricas, Métricas e Qualidade de Código (259 Testes)
+9. Divisão de Trabalho e Papéis da Equipe InsurMinds
+10. Guia de Prompts para Geração de Vídeo e Podcast no NotebookLM
+
+
+================================================================================
+1. IDENTIFICAÇÃO DO PROJETO E EQUIPE
+================================================================================
+Nome do Projeto: InsurMinds — Plataforma de Análise e Comparação de Apólices D&O
+Instituição: Instituto de Inteligência Artificial Aplicada (I2A2)
+Repositório Oficial: https://github.com/DanielRamon10/insurminds-projeto-final
+
+Integrantes do Grupo InsurMinds:
+- Daniel Ramon: Coordenação técnica, arquitetura de software, agentes de IA e esteira de integração.
+- Nicole Paes: Engenharia de dados, esteira de ingestão de documentos e tratamento OCR.
+- Paulo Henrique: Modelagem de prompts de linguagem, sintonia de modelos generativos e visão de negócios.
+- Paulo Roberto: Arquitetura de interface gráfica (Streamlit), experiência do usuário (UX), auditoria visual (renderização direta de páginas do PDF) e motor de apresentação.
+- Juliana Catarina: Especialista de domínio de seguros, validação técnica de coberturas e representante da equipe.
+
+
+================================================================================
+2. O PROBLEMA DE NEGÓCIO: O LABIRINTO DO SEGURO D&O
+================================================================================
+O seguro D&O (Directors and Officers Liability Insurance) é uma das modalidades mais
+críticas e complexas do mercado corporativo mundial. Trata-se de um seguro de
+responsabilidade civil contratado por empresas para proteger o patrimônio pessoal
+de seus administradores, conselheiros, diretores e executivos contra processos
+judiciais, administrativos, arbitrais ou regulatórios (tais como investigações da
+CVM, CADE, Receita Federal ou ações civis públicas) decorrentes de atos de gestão.
+
+A complexidade e a dor do mercado decorrem de quatro fatores graves:
+
+A) Volume e Densidade Jurídica Intransponível:
+Uma única apólice de seguro D&O contém entre 70 e mais de 100 páginas de texto
+jurídico denso, repleto de cláusulas cruzadas, condicionantes, exclusões específicas,
+prazos decadenciais e remissões a anexos contratuais.
+
+B) Falta de Padronização Terminológica (A Torre de Babel dos Seguros):
+Não existe uma padronização formal de vocabulário entre as seguradoras. A mesmíssima
+cobertura pode ser chamada de "Custos de Defesa" na Seguradora A, "Honorários e
+Despesas Jurídicas" na Seguradora B, ou estar diluída como "Despesas de
+Comparecimento e Investigação" na Seguradora C. Para 15 campos fundamentais de D&O,
+nossa equipe identificou e mapeou 46 sinônimos e variações de mercado.
+
+C) Pontos Cegos de Risco e Assimetria de Informação:
+Para um tomador de seguros ou mesmo para um corretor, duas apólices podem aparentar
+oferecer a mesma cobertura porque possuem o mesmo Limite Máximo de Garantia (LMI)
+de R$ 10 milhões. Contudo, nas letras miúdas:
+- Na apólice da Seguradora A, os Custos de Defesa consomem o limite principal da apólice.
+- Na apólice da Seguradora B, os Custos de Defesa exigem a contratação de uma cobertura
+  adicional específica, caso contrário o executivo não terá cobertura para advogados.
+- Na apólice da Seguradora C, existe um prazo complementar de reclamação de 36 meses,
+  enquanto na Seguradora D esse prazo é zero caso a apólice não seja renovada.
+
+D) Custo Operacional e Risco de Erro Humano:
+A análise manual de duas ou três apólices concorrentes exige dias de trabalho de
+advogados especializados ou corretores sêniores. Planilhas manuais são lentas, caras,
+inconsistentes e altamente suscetíveis a omissões humanas catastróficas que podem
+deixar executivos desprotegidos no momento de uma crise corporativa.
+
+A Missão do InsurMinds:
+Transformar uma leitura exaustiva de dias em uma análise automatizada, auditável e
+estruturada em menos de 60 segundos, apontando exatamente o que difere entre as
+propostas e permitindo que o corretor e o segurado tomem decisões embasadas com 100%
+de rastreabilidade da fonte original.
+
+
+================================================================================
+3. FILOSOFIA DA SOLUÇÃO: O QUE É GENERATIVO VS. O QUE É DETERMINÍSTICO
+================================================================================
+A decisão de engenharia mais importante do projeto InsurMinds é a sua fronteira
+estrita entre Inteligência Artificial Generativa e Algoritmos Determinísticos:
+
+"Num documento jurídico corporativo, um limite de indenização inventado pela IA
+é infinitamente pior do que nenhum limite."
+
+Por essa razão, o InsurMinds rejeitou a abordagem ingênua de muitos projetos de IA
+que simplesmente jogam dois PDFs inteiros no prompt de um LLM e pedem: "compare essas
+duas apólices e me diga as diferenças". Essa abordagem ingênua sofre de três defeitos
+fatais no setor segurador:
+1. Alucinação de cláusulas e números inexistentes.
+2. Não-reprodutibilidade (o mesmo documento executado duas vezes resulta em pareceres
+   diferentes).
+3. Impossibilidade de validação matemática e testes automatizados.
+
+A Matriz de Decisão do InsurMinds:
+--------------------------------------------------------------------------------
+Etapa do Pipeline    | Usa LLM? | Justificativa Técnica
+--------------------------------------------------------------------------------
+1. Ingestão de PDF   | NÃO      | Extrair bytes e texto de arquivo é problema de
+                     |          | engenharia de software resolvido.
+--------------------------------------------------------------------------------
+2. Extração de Dados | SIM      | Reconhecer cláusulas jurídicas sob dezenas de
+                     |          | sinônimos não-padronizados exige compreensão de
+                     |          | linguagem natural profunda.
+--------------------------------------------------------------------------------
+3. Comparação        | NÃO      | Decidir matematicamente se duas regras são iguais,
+                     |          | diferentes ou omissas exige determinismo absoluto,
+                     |          | lógica booleana e reprodutibilidade testável.
+--------------------------------------------------------------------------------
+4. Redação em Prosa  | SIM      | Explicar ao cliente com clareza executiva por que
+                     |          | uma diferença contratual importa exige habilidade
+                     |          | verbal e síntese humana.
+--------------------------------------------------------------------------------
+
+Graças a essa separação cirúrgica, o sistema possui 259 testes automatizados que
+rodam em poucos segundos sem gastar um único centavo de cota de API e sem depender
+de conexão de rede, garantindo estabilidade industrial.
+
+
+================================================================================
+4. ARQUITETURA DO SISTEMA EM QUATRO CAMADAS DESACOPLADAS
+================================================================================
+O sistema opera através de um pipeline linear, desacoplado e fortemente tipado:
+
+```
+[ Documento PDF / Imagem ]
+            │
+            ▼
+┌────────────────────────────────────────────────────────┐
+│ CAMADA 1: INGESTÃO HÍBRIDA INTELIGENTE                 │
+│ (app/domain/ingestao.py, app/clients/extracao.py)      │
+│ - Leitura página a página (pypdf)                      │
+│ - Renderização de imagem sob demanda (pypdfium2)       │
+│ - OCR seletivo por página (Tesseract)                  │
+│ - Saída: DocumentoExtraido (preserva página original)  │
+└────────────────────────────────────────────────────────┘
+            │
+            ▼
+┌────────────────────────────────────────────────────────┐
+│ CAMADA 2: EXTRAÇÃO E VALIDAÇÃO ANTI-ALUCINAÇÃO         │
+│ (app/agents/extrator.py, llm.py, validacao.py)         │
+│ - Mapeia 15 campos essenciais (data/campos_do.yaml)    │
+│ - Cascata de LLMs (Gemini -> Groq -> OpenRouter)       │
+│ - Extrai valor, página exata e citação literal         │
+│ - Validador descarta números sem apoio ou fake quotes  │
+│ - Saída: ApoliceExtraida (contrato de dados Pydantic)  │
+└────────────────────────────────────────────────────────┘
+            │
+            ▼
+┌────────────────────────────────────────────────────────┐
+│ CAMADA 3: ARMAZENAMENTO E COMPARADOR DETERMINÍSTICO    │
+│ (app/domain/armazenamento.py, comparacao.py)           │
+│ - Persistência relacional em SQLite embutido           │
+│ - Motor percorre os 15 campos do dicionário de negócio │
+│ - Comparação por tipo semântico (dinheiro, dias, bool) │
+│ - Classificação estrita dos 5 vereditos contratuais    │
+│ - Saída: Comparacao (objeto estruturado e testável)    │
+└────────────────────────────────────────────────────────┘
+            │
+            ▼
+┌────────────────────────────────────────────────────────┐
+│ CAMADA 4: APRESENTAÇÃO E AUDITORIA VISUAL              │
+│ (app/interface/app.py, apresentacao.py, redator.py)    │
+│ - Interface web moderna em Streamlit                   │
+│ - Barra de composição visual (KPIs de risco)           │
+│ - Comparativo lado a lado com parecer do especialista  │
+│ - Botão "De onde veio?": citação + PDF real renderizado│
+│ - Exportação CSV pronta para Excel em pt-BR            │
+└────────────────────────────────────────────────────────┘
+```
+
+DETALHAMENTO DE CADA CAMADA:
+
+Camada 1: Ingestão Híbrida Inteligente
+- O sistema não toma uma decisão única para o arquivo todo. Ele analisa o documento
+  página por página.
+- Se uma página de 80 páginas for um anexo escaneado ou um gráfico rasterizado sem texto
+  vetorial, o motor detecta a ausência de texto digital nativo, renderiza essa página
+  específica em imagem em alta definição usando `pypdfium2` (sem necessidade de instalar
+  o pesado Poppler no sistema operacional) e aplica OCR em português com `pytesseract`.
+- O princípio inviolável da Ingestão: "O texto nunca perde o número da página". Toda
+  página é envelopada com delimitadores canônicos `=== PÁGINA n ===`.
+
+Camada 2: Extração Estruturada com IA Generativa e Validação Rígida
+- O texto demarcado por páginas é enviado para o Agente Extrator.
+- Uma apólice de 72 páginas consome cerca de 60.000 tokens de entrada.
+- Para assegurar alta disponibilidade e custo-benefício, o sistema implementa uma
+  cascata de provedores (Fallback Cascading):
+  1º Provedor: Google Gemini 1.5 Flash / Flash Lite (alta janela de contexto e raciocínio rápido).
+  2º Provedor: Groq (Llama-3 em inferência ultra-rápida via hardware LPU).
+  3º Provedor: OpenRouter (acesso a múltiplos modelos como fallback de emergência).
+- A saída é forçada a cumprir um contrato estrito Pydantic v2 (`ApoliceExtraida`).
+- Agente Validador: antes de aceitar qualquer dado extraído, o sistema executa checagens
+  determinísticas:
+  1. O número extraído realmente aparece dentro da citação literal? Se o LLM disser
+     "R$ 50.000" mas a citação não contiver "50.000", o valor é sumariamente rejeitado.
+  2. O trecho citado realmente existe dentro do texto original daquela página do PDF?
+     Se o LLM inventar um texto que soa jurídico mas não está no PDF, o validador invalida a origem.
+  3. O trecho citado repete-se em mais de três páginas? Se sim, trata-se de um cabeçalho
+     ou rodapé institucional da seguradora, e não de uma cláusula legítima.
+  4. Detecção de Remissões: se o modelo responder frases vazias como "conforme definido
+     na Proposta", o validador limpa o campo para `null` e registra que a apólice remete
+     a outro documento.
+
+Camada 3: Armazenamento e Motor de Comparação 100% Determinístico
+- Os dados extraídos com suas provas de origem são gravados no banco relacional SQLite
+  (arquivo `data/insurminds.db`). O SQLite foi escolhido intencionalmente: elimina a
+  necessidade de subir servidores externos como PostgreSQL para rodar o MVP, tornando a
+  plataforma portátil e instantânea.
+- O Motor de Comparação (`app/domain/comparacao.py`) NÃO usa inteligência artificial. Ele
+  executa algoritmos de correspondência de tipos:
+  * Compara valores monetários: reconhece que `R$ 10.000.000,00` e `R$ 10 milhões` são
+    exatamente o mesmo valor, evitando o falso positivo grosseiro da igualdade de string.
+  * Compara prazos temporais: reconhece que `90 dias` e `3 meses` representam a mesma
+    janela de tempo.
+  * Recusa-se a julgar texto corrido por conta própria: se as cláusulas forem descritivas,
+    o motor não "adivinha" semântica; ele categoriza como "redação divergente" e passa a
+    responsabilidade da interpretação textual para o Agente Redator ou para o corretor humano.
+- O Comparador itera sobre o Dicionário do Especialista (e não sobre os campos que cada
+  apólice trouxe). Dessa forma, se uma apólice omite completamente uma proteção que
+  existe no dicionário, o sistema identifica e aponta a omissão como risco imediato.
+
+Os 5 Vereditos do Motor de Comparação:
+1. `igual`: Valores e condições semanticamente equivalentes em ambas as apólices.
+2. `diferente`: Valores numéricos ou prazos divergentes de forma incontestável.
+3. `redacao_divergente`: Ambas as seguradoras tratam do tema, mas utilizam redações e
+   condições jurídicas com nuances particulares que merecem leitura detalhada.
+4. `ausente_em_alguma`: Uma apólice oferece a proteção e a outra é completamente omissa
+   (representa a maior vantagem/desvantagem competitiva para o cliente).
+5. `ausente_em_todas`: Nenhuma das apólices cobre aquele item nas condições gerais.
+
+Camada 4: Apresentação, Auditoria Visual e Agente Redator
+- A interface construída em Streamlit (`app/interface/app.py`) foi desenhada com base
+  nas melhores práticas de UX corporativo:
+  * Não depende de emojis instáveis: usa ícones vetoriais SVG imunes à quebra de
+    tradução automática de navegadores.
+  * Barra de Composição Visual: um gráfico segmentado de alta visibilidade que resume
+    a proporção de cláusulas iguais, divergentes e omissas.
+  * Cartões de Cláusulas Lado a Lado: contraste instantâneo entre as duas seguradoras,
+    acompanhado de uma explicação didática pré-configurada pelo corretor sobre "Por que
+    esse campo importa".
+  * O Recurso de Auditoria Visual ("De onde veio?"): ao clicar no botão em qualquer
+    cláusula, abre-se um popover que exibe a citação textual literal, o número exato da
+    página e UMA IMAGEM REAL RENDERIZADA DAQUELA PÁGINA DO PDF com o trecho destacado. O
+    advogado ou corretor confere a prova documental sem precisar folhear 80 páginas.
+  * Exportação de Relatório: botão de download que gera um arquivo CSV formatado com
+    delimitador de ponto e vírgula (`;`) e assinatura UTF-8 BOM, abrindo perfeitamente
+    no Microsoft Excel em português com acentuação e colunas corretas.
+  * Agente Redator (`app/agents/redator.py`): gera um sumário executivo em linguagem
+    natural. Possui uma regra rígida: SÓ AFIRMA UMA DIVERGÊNCIA SE PUDER CITAR DUAS
+    PROVAS LITERAIS (uma de cada apólice). Se tiver apenas uma prova ou recorte parcial,
+    ele declara o item como "inconclusivo" e recomenda a conferência humana.
+
+
+================================================================================
+5. DICIONÁRIO DE NEGÓCIO DO ESPECIALISTA E OS 15 CAMPOS VITAIS
+================================================================================
+As regras de negócio do InsurMinds não estão chumbadas no código-fonte Python. Elas
+estão centralizadas no arquivo declarativo `data/campos_do.yaml`. Esse arquivo foi
+construído sob a orientação do especialista em seguros da equipe e pode ser expandido
+sem alterar uma única linha de software.
+
+Para cada campo, o arquivo define:
+- Nome canônico da cláusula.
+- Tipo do dado (dinheiro, prazo, texto, booleano).
+- Sinônimos e termos alternativos usados pelas diferentes seguradoras brasileiras.
+- A justificativa de negócio ("Por que importa") que orienta o cliente final.
+
+Os 15 Campos Mapeados e sua Relevância Prática:
+1. Limite Máximo de Garantia (LMI): O teto global de indenização da apólice.
+2. Franquia / Participação Obrigatória (POS): O valor ou percentual que o segurado
+   deve desembolsar antes de a seguradora pagar.
+3. Vigência da Apólice: O período de início e fim da validade do contrato.
+4. Data Retroativa: Define até quando no passado os atos de gestão cometidos pelo
+   administrador ainda estão cobertos pela apólice atual.
+5. Custos de Defesa: Honorários advocatícios e custas periciais para defender o executivo.
+   (Crítico: verifica se os honorários consomem o LMI principal ou se têm limite apartado).
+6. Adiantamento de Custos de Defesa: Cláusula vital que obriga a seguradora a liberar o
+   dinheiro do advogado antes do término da ação judicial, garantindo defesa de alto nível.
+7. Prazo Complementar de Reclamação: Período após o término da vigência em que ainda se
+   podem notificar sinistros de fatos ocorridos no passado.
+8. Prazo Suplementar: Período adicional que pode ser contratado caso a seguradora decida
+   não renovar a apólice.
+9. Sublimites de Cobertura: Tetos específicos para coberturas especiais (ex: poluição,
+   bloqueio de bens, multas administrativas). O especialista enfatizou que duas apólices
+   com o mesmo LMI de R$ 10 mi podem ter sublimites desiguais de R$ 1 mi vs R$ 500 mil.
+10. Definição de Reclamação: O gatilho que ativa a apólice (se exige citação judicial,
+    notificação extrajudicial ou mera investigação preliminar).
+11. Cobertura para Investigações: Amparo a despesas com advogados em depoimentos perante
+    órgãos públicos antes mesmo da existência de um processo formal.
+12. Bloqueio e Penhora de Bens: Pagamento de despesas correntes do executivo caso seus
+    bens pessoais sejam congelados por ordem judicial.
+13. Danos Morais e Corporais: Proteção contra ações de terceiros alegando danos morais
+    decorrentes de atos de gestão.
+14. Práticas Trabalhistas Indevidas (EPL): Cobertura para processos de assédio,
+    discriminação ou demissão injusta movidos por funcionários contra administradores.
+15. Falência e Recuperação Judicial: Garantia de que a cobertura persistirá mesmo se a
+    empresa entrar em processo de falência ou recuperação.
+
+
+================================================================================
+6. AS TRÊS REGRAS DE OURO CONTRA ALUCINAÇÕES DE IA
+================================================================================
+Para conferir credibilidade jurídica à plataforma, o InsurMinds adotou três regras
+de ouro intransponíveis:
+
+Regra 1: "Sem Citação Literal, Não Há Extração"
+Todo dado extraído DEVE obrigatoriamente apontar:
+- O nome do arquivo original.
+- O número físico da página no PDF.
+- O trecho de texto literal (ipsis litteris) recortado da página.
+Se o modelo de linguagem deduzir um valor mas não encontrar o trecho exato de apoio,
+o validador automático substitui o valor por `null`.
+
+Regra 2: "Proibição de Falso Veredito Negativo"
+Se uma apólice não trata expressamente de um assunto, o sistema grava `null` e não uma
+string vazia. Há uma diferença conceitual gigantesca entre "a seguradora não cobre"
+e "o campo não está definido neste documento". O sistema trata ausência com rigor.
+
+Regra 3: "O Redator Precisa de Duas Provas"
+O Agente Redator só tem permissão para escrever que a Seguradora A é superior ou
+diferente da Seguradora B se tiver em mãos o trecho comprovatório de A e o trecho
+comprovatório de B. Na ausência de uma das provas, ele emite o parecer de "inconclusivo",
+evitando que o corretor prometa garantias infundadas ao cliente.
+
+
+================================================================================
+7. A GRANDE LIÇÃO PRÁTICA: CONDIÇÕES GERAIS VS. ESPECIFICAÇÃO DA APÓLICE
+================================================================================
+Durante os testes de extração com apólices reais de gigantes do mercado segurador
+(Chubb Seguros, com 70 páginas, e AIG Seguros, com 72 páginas), a equipe deparou-se
+com uma realidade crucial do mercado de seguros:
+
+Por que os campos numéricos (LMI, Franquia, Vigência) vieram vazios (`null`)?
+- Não se trata de uma falha de extração do sistema!
+- No mercado securitário brasileiro, as seguradoras disponibilizam publicamente em seus
+  sites apenas as chamadas **Condições Gerais**. As Condições Gerais são a minuta-padrão
+  do contrato, registrada na SUSEP, que descreve as regras, direitos e exclusões.
+- Os valores contratados individuais (Ex: LMI de R$ 10.000.000,00, Franquia de R$ 50.000,00,
+  datas de vigência e prêmio da apólice) pertencem exclusivamente à **Especificação da
+  Apólice** (ou Apólice Propriamente Dita / Proposta), que é um documento confidencial
+  e individual emitido sob medida para cada cliente empresarial.
+- Como o sistema reagiu a isso? Com extrema maturidade técnica e honestidade acadêmica:
+  Em vez de alucinar ou "inventar" números fictícios para parecer completo na tela, o
+  Agente Extrator identificou as cláusulas de LMI e Franquia nas Condições Gerais,
+  extraiu a citação exata onde a seguradora afirma "conforme definido na Especificação
+  da Apólice", gravou a página onde essa cláusula se encontra e marcou o valor como
+  `null` com a devida anotação de remissão externa.
+- Na interface, para fins didáticos de demonstração, o usuário pode visualizar tanto as
+  extrações 100% puras das apólices reais quanto uma carga demonstrativa simulada com
+  valores de especificação preenchidos, sendo tudo claramente rotulado para a banca.
+
+
+================================================================================
+8. EVIDÊNCIAS EMPÍRICAS, MÉTRICAS E QUALIDADE DE CÓDIGO (259 TESTES)
+================================================================================
+O projeto InsurMinds distingue-se pelo padrão de engenharia de software de nível de
+produção:
+
+Números Consolidados da Solução:
+- Linhas de Código: Cerca de 7.000 linhas de código de aplicação e scripts utilitários.
+- Linhas de Testes: Cerca de 3.260 linhas de testes automatizados com `pytest`.
+- Cobertura de Testes: **259 testes automatizados com 100% de aprovação**, cobrindo:
+  * Ingestão de arquivos e chaveamento entre PDF e OCR.
+  * Validação de contratos Pydantic v2.
+  * Mecanismo de fallback de chamadas de LLM.
+  * Motor de comparação determinístico e normalização monetária/temporal.
+  * Persistência e consultas relacionais no SQLite.
+  * Renderização de páginas e formatação de relatórios em CSV/Excel.
+- Rastreabilidade Real Comprovada:
+  Nas extrações reais das apólices da Chubb (70 páginas) e AIG (72 páginas):
+  * Foram geradas 19 citações de origem.
+  * As 19 citações foram auditadas e conferidas MANUALMENTE, linha por linha, contra os
+    arquivos PDF originais. **100% das 19 citações existem literalmente nas páginas apontadas**.
+- Custo de Processamento: Cada apólice consome aproximadamente 60.000 tokens de contexto,
+  demonstrando alta eficiência orçamentária graças ao fatiamento estruturado de páginas.
+- Segurança de Dados e Credenciais:
+  Nenhuma chave de API ou segredo está commitado no repositório Git. As credenciais
+  ficam isoladas em arquivos locais `.env` (ignorados pelo `.gitignore`), e o script de
+  empacotamento oficial da entrega varre todos os arquivos e aborta automaticamente a
+  geração do pacote ZIP caso detecte qualquer chave privada ou dado de cliente.
+
+
+================================================================================
+9. DIVISÃO DE TRABALHO E PAPÉIS DA EQUIPE INSURMINDS
+================================================================================
+O sucesso do projeto resultou de uma divisão equilibrada de competências em frentes de
+trabalho coordenadas:
+
+- Daniel Ramon:
+  * Papel: Coordenação Técnica e Engenharia de Agentes (Frente C).
+  * Entregas: Estruturação dos agentes de extração, arquitetura de fallback multi-provedor
+    (Gemini, Groq, OpenRouter), orquestração de chamadas de LLM e Agente Redator.
+
+- Nicole Paes:
+  * Papel: Engenharia de Dados e Pipeline de Ingestão (Frente A).
+  * Entregas: Construção do módulo de ingestão híbrida, integração com `pypdf`, renderização
+    vetorial com `pypdfium2` e OCR inteligente com Tesseract.
+
+- Paulo Henrique:
+  * Papel: Engenharia de Prompts e Modelagem de Domínio (Frente C.1 e Negócios).
+  * Entregas: Formulação e calibração dos prompts de sistema (System Prompts) para extração
+    precisa de cláusulas jurídicas e parametrização dos 15 campos fundamentais de D&O.
+
+- Paulo Roberto:
+  * Papel: Engenharia de Interface, UX e Auditoria Visual (Frente D).
+  * Entregas: Desenvolvimento completo do frontend em Streamlit, arquitetura dos componentes
+    visuais (cards de cláusulas, barra de composição, ícones SVG desacoplados), mecanismo de
+    auditoria visual interativa com renderização de páginas do PDF e pipeline de exportação CSV.
+
+- Juliana Catarina:
+  * Papel: Especialista de Domínio, Validação de Negócios e Representante do Grupo.
+  * Entregas: Validação das regras de negócio securitárias, auditoria da fidelidade das
+    cláusulas contratuais de D&O e representação formal do grupo perante o Instituto I2A2.
+
+
+================================================================================
+10. GUIA DE PROMPTS PARA GERAÇÃO DE VÍDEO E PODCAST NO NOTEBOOKLM
+================================================================================
+Ao carregar este arquivo de texto no Google NotebookLM (https://notebooklm.google.com/),
+você terá em mãos um assistente de inteligência artificial alimentado exclusivamente por
+fatos reais do projeto InsurMinds.
+
+Siga os passos abaixo para gerar os melhores conteúdos explicativos:
+
+PASSO 1: Fazer o Upload
+1. Acesse o NotebookLM e crie um novo caderno intitulado "InsurMinds - Projeto Final I2A2".
+2. Em "Sources" (Fontes), clique em "Upload" e adicione este arquivo `explicacao_sistema_notebooklm.txt`.
+3. Adicione também, se desejar, o arquivo `roteiro_video_notebooklm.txt` e o `RELATORIO_TECNICO.md`.
+
+PASSO 2: Gerar o Podcast de Dois Especialistas (Audio Overview)
+1. Na lateral direita do NotebookLM, localize o card "Studio" -> "Audio Overview" (Conversa em Áudio).
+2. Clique no botão de configurações ("Customize") e cole a seguinte instrução:
+   "Vocês são dois especialistas em tecnologia e seguros corporativos debatendo o projeto
+   InsurMinds, desenvolvido para o Instituto I2A2. O tom deve ser empolgante, técnico e
+   didático em Português do Brasil. Destaquem a dor real do seguro D&O (70+ páginas de juridiquês),
+   a decisão brilhante da equipe de NÃO usar IA na comparação (mantendo o comparador 100%
+   determinístico e testável com 259 testes), a auditoria visual em que o usuário vê a página real
+   do PDF, e a maturidade de explicar por que apólices públicas não têm valores de especificação.
+   Citem nominalmente os integrantes: Daniel Ramon, Nicole Paes, Paulo Henrique, Paulo Roberto e Juliana Catarina."
+3. Clique em "Generate". O NotebookLM gerará um episódio de áudio completo com diálogo
+   dinâmico e realista entre dois debatedores sobre a plataforma!
+
+PASSO 3: Gerar Roteiros Adicionais ou Vídeos com IA (Prompt de Chat)
+No chat do NotebookLM, copie e cole as seguintes sugestões de prompts:
+
+Prompt A (Roteiro de Vídeo Explicativo de 5 Minutos):
+"Com base exclusivamente na fonte anexada, gere um roteiro detalhado para um vídeo demonstrativo
+de 5 minutos da plataforma InsurMinds. Divida o vídeo em 4 blocos:
+1. O Problema do Seguro D&O (0:00 a 1:00)
+2. Arquitetura da Solução e Decisão Determinística (1:00 a 2:15)
+3. Demonstração Prática na Interface Streamlit e Auditoria Visual do PDF (2:15 a 4:00)
+4. Métricas, 259 Testes, Limitações Honestas e Equipe (4:00 a 5:00)
+Inclua indicações visuais de tela e o texto exato da fala do narrador em tom seguro e profissional."
+
+Prompt B (Perguntas e Respostas da Banca Examinadora):
+"Aja como um examinador rigoroso de IA e Engenharia de Software da banca do I2A2.
+Formule as 5 perguntas mais difíceis sobre a arquitetura do InsurMinds (ex: alucinação,
+comparação determinística, custo de tokens e dependência de PDF) e forneça a resposta
+definitiva baseada nos dados do relatório técnico."
+
+Prompt C (Post Executivo para o LinkedIn):
+"Crie um artigo executivo para o LinkedIn celebrando a conclusão do projeto InsurMinds pela
+equipe do I2A2. Destaque como a inteligência artificial generativa aliada à engenharia de
+software determinística resolveu a assimetria de informação no mercado de seguros D&O,
+mencionando os 259 testes e a rastreabilidade total de dados com a equipe."
+
+================================================================================
+FIM DO DOCUMENTO DE EXPLICAÇÃO DO SISTEMA INSURMINDS
+================================================================================

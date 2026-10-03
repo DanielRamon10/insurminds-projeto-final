@@ -1,0 +1,100 @@
+ROTEIRO DE NARRACAO DO VIDEO FINAL - PROJETO INSURMINDS (I2A2)
+Titulo: Plataforma Inteligente para Analise e Comparacao de Apolices D&O
+Narrador: Paulo Roberto
+Equipe: Daniel Ramon, Nicole Paes, Paulo Henrique, Paulo Roberto, Juliana Catarina
+Duracao Total: 4 minutos e 55 segundos
+Data: Outubro de 2026
+
+
+===============================================================================
+BLOCO 1: O PROBLEMA DE NEGOCIO (0:00 a 0:30)
+Visual na tela: Slide 1 da Capa do Pitch Deck (InsurMinds_Projeto_Final.pptx)
+===============================================================================
+
+Ola a todos! Eu sou o Paulo Roberto e apresento o trabalho de conclusao de curso do Grupo InsurMinds para o I2A2: a Plataforma Inteligente para Analise e Comparacao de Apolices D&O.
+
+Hoje, comparar apolices de seguro para conselheiros e diretores e um processo manual, exaustivo e de alto risco. Sao documentos juridicos de mais de 70 paginas por seguradora, onde clausulas equivalentes aparecem com nomes diferentes, regras distintas e em lugares espalhados. Duas apolices com o mesmo limite maximo podem ter franquias completamente discrepantes ou deixar de fora custos essenciais de defesa. Nossa plataforma automatiza essa leitura sem alucinar e sem esconder de onde cada informacao veio.
+
+
+===============================================================================
+BLOCO 2: ARQUITETURA DA SOLUCAO (0:30 a 1:15)
+Visual na tela: Slide 4 do Pitch Deck (Diagrama de Arquitetura em 4 Camadas)
+===============================================================================
+
+Para resolver essa dor, construimos uma arquitetura em quatro camadas desacopladas e fortemente tipadas.
+
+Na Ingestao, processamos PDFs nativos e imagens com OCR Tesseract, preservando a numeracao continua de cada pagina.
+
+Na Extracao, agentes com IA Generativa utilizam modelos de linguagem para estruturar 15 clausulas padronizadas do mercado D&O, com rastreabilidade obrigatoria e null explicito.
+
+No Armazenamento, usamos banco estruturado SQLite e um motor de comparacao 100% deterministico. Ou seja, a comparacao entre as apolices nao usa modelo de linguagem, garantindo que o veredito seja reproduzivel, auditavel e sem risco de alucinacao.
+
+E, na ponta final, a Interface interativa em Streamlit consome esses dados para o corretor de seguros e para o tomador da decisao.
+
+
+===============================================================================
+BLOCO 3: DEMONSTRACAO DA INTERFACE - VISAO GERAL (1:15 a 2:00)
+Visual na tela: Navegador aberto no Streamlit (http://localhost:8501)
+Acao: Mostrar o topo da tela com o cabecalho e a Barra de Composicao
+===============================================================================
+
+Entrando agora na aplicacao ao vivo, vemos a comparacao direta entre duas condicoes gerais reais de mercado: AIG Seguros Brasil contra Chubb.
+
+Logo no topo, a barra de composicao resume a situacao dos 15 campos avaliados: temos 1 protecao que apenas uma das apolices oferece, 8 redacoes divergentes e 1 campo identico.
+
+Uma decisao fundamental da engenharia do nosso sistema: quando as duas apolices tratam do mesmo tema, mas com redacoes contratuais distintas, o motor classifica com rigor como 'redacao divergente'. O sistema se recusa a afirmar que as coberturas sao iguais sem ter como provar matematicamente, deixando a leitura clara para a decisao do especialista.
+
+
+===============================================================================
+BLOCO 4: COMPARACAO LADO A LADO E "POR QUE IMPORTA" (2:00 a 2:50)
+Visual na tela: Aba "Comparacao" do Streamlit
+Acao: Rolar a pagina pelos cartoes lado a lado, destacando Custos de Defesa e Prazo Complementar
+===============================================================================
+
+Rolando pelos cartoes, vemos a forca da comparacao lado a lado.
+
+Vejam o caso de Custos de Defesa, que e uma das diferencas mais criticas em seguro D&O: na AIG, os custos estao incluidos diretamente no Limite Maximo da apolice, consumindo a mesma garantia. Ja na Chubb, o texto exige a contratacao expressa de uma cobertura adicional especifica.
+
+Vejam tambem o Prazo Complementar: a Chubb concede 36 meses na apolice base, enquanto na AIG essa extensao depende de contratacao em outro documento.
+
+E reparem neste bloco em destaque: 'Por que importa'. Ele nao e gerado por IA em tempo real; ele e a visao do especialista de seguros integrada ao sistema, orientando o tomador sobre o impacto pratico de cada clausula na vida e no patrimonio do executivo.
+
+
+===============================================================================
+BLOCO 5: RASTREABILIDADE COM PROVA VISUAL E TABELA CSV (2:50 a 3:50)
+Visual na tela: Streamlit - Popover "De onde veio" aberto e aba "Tabela completa"
+Acao: Clicar no botao "De onde veio", mostrar trecho citado, pagina e a imagem do PDF original renderizada. Depois, alternar para a aba "Tabela completa"
+===============================================================================
+
+Agora, o coracao e o maior diferencial da nossa plataforma: a rastreabilidade total.
+
+Ao clicar no botao 'De onde veio', a interface abre a prova documental. Ela exibe o trecho literal citado pelo extrator, aponta o numero exato da pagina e renderiza a imagem real da pagina original do documento PDF para conferencia visual imediata. Nenhum dado e solto no ar: cada valor tem prova de origem e pagina correspondente.
+
+Para o fluxo de trabalho do corretor, temos a aba Tabela Completa, que mapeia todos os campos com a situacao colorida e disponibiliza a exportacao imediata em CSV pronto para o Excel, formatado com separador e acentuacao em portugues.
+
+
+===============================================================================
+BLOCO 6: RESULTADOS REAIS E LIMITACOES HONESTAS (3:50 a 4:35)
+Visual na tela: Aba "Apolices e envio" e retorno ao Slide 10 do Pitch Deck
+===============================================================================
+
+Em resultados tecnicos, a plataforma processou documentos densos de mais de 70 paginas, com consumo medio de 60 mil tokens por apolice, alcancando 19 valores com origem registrada, ou seja, 100% de precisao sobre o que foi encontrado.
+
+E aqui apresentamos uma limitacao tecnica que sustenta a honestidade do projeto: Condicoes Gerais sao minutas-padrao de seguradoras. Valores puramente numericos, como o Limite Maximo de R$ 50 milhoes ou vigencia exata, sao definidos na 'Especificacao da Apolice' de cada cliente. Nosso extrator identifica a clausula, cita a pagina e registra que o numero pertence a especificacao, sem inventar valores ficticios. A ingestao, a extracao, o banco, a comparacao deterministica e a interface operam sobre dados 100% reais.
+
+
+===============================================================================
+BLOCO 7: CONCLUSAO E EQUIPE INSURMINDS (4:35 a 4:55)
+Visual na tela: Slide 12 do Pitch Deck (Equipe e Encerramento)
+===============================================================================
+
+Com este trabalho, a analise de apolices D&O deixa de ser uma leitura manual de horas e passa a ser uma decisao agil com prova de origem.
+
+Em nome de todo o Grupo InsurMinds:
+- Daniel Ramon na coordenacao e engenharia;
+- Nicole Paes nos agentes de extracao e validacao;
+- Paulo Henrique nas regras de seguros e negocio;
+- Juliana Catarina na nossa representacao oficial;
+- e eu, Paulo Roberto, na interface e demonstracao;
+
+Agradecemos aos professores e mentores do I2A2 pela jornada neste modulo avancado. Muito obrigado!
