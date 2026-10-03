@@ -371,11 +371,11 @@ def main() -> int:
         print("     as regioes de cada recorte estao em docs/ROTEIRO_VIDEO.md")
         print("  2. o problema de negocio na voz do Paulo Henrique, corretor do grupo —")
         print("     o slide 2 esta escrito com o que o roteiro registra; ele confirma ou reescreve")
-        print("  3. a arquitetura revisada pelo Daniel, dono das frentes A e C")
+        print("  3. (arquitetura: revisada)")
     else:
         print("  1. o problema de negocio na voz do Paulo Henrique, corretor do grupo —")
         print("     o slide 2 esta escrito com o que o roteiro registra; ele confirma ou reescreve")
-        print("  2. a arquitetura revisada pelo Daniel, dono das frentes A e C")
+        print("  2. (arquitetura: revisada em 03/10 — frente B e redator incluidos)")
     print("\n  editar texto: bloco CONTEUDO, no fim de scripts/gerar_pitch.py")
     print("  regerar:      python -m scripts.gerar_pitch")
     return 0
@@ -450,9 +450,9 @@ CONTEUDO: list[dict] = [
             ("A", "INGESTÃO", "Recebe PDF e imagem, extrai o texto página a página, usa OCR "
              "só onde falta texto embutido e não derruba o lote quando um arquivo falha.",
              VERDE),
-            ("B", "EXTRAÇÃO", "Interpreta o texto com LLM, apoiada no dicionário de campos, e "
-             "devolve cada valor com página e trecho de origem. Publicada; exige chave de "
-             "modelo no `.env` para rodar.", TEAL),
+            ("B", "EXTRAÇÃO E REDAÇÃO", "Interpreta o texto com LLM, apoiada no dicionário "
+             "de campos, e devolve cada valor com página e trecho de origem. O redator escreve "
+             "o que difere, e só afirma diferença quando cita as duas apólices.", TEAL),
             ("C", "ARMAZENAMENTO E COMPARAÇÃO", "Guarda as apólices processadas em SQLite e "
              "compara campo a campo, sem modelo de linguagem: mesma entrada, mesma saída.",
              ESCURO),
@@ -463,7 +463,8 @@ CONTEUDO: list[dict] = [
             "Frentes A e C: Daniel Ramon · frente B: Nicole Paes · dicionário de campos: "
             "Paulo Henrique · frente D: Paulo Roberto. A separação existe para que cada parte "
             "possa ser testada sozinha — e para que a explicação em texto (LLM) nunca contamine "
-            "a comparação, que precisa ser reprodutível."
+            "a comparação, que precisa ser reprodutível. É o que permite 259 testes "
+            "automatizados sem tocar a rede: tudo o que é decisão de negócio é determinístico."
         ),
     },
     {
