@@ -1,6 +1,6 @@
 # Roteiro do Projeto Final — Plataforma de Análise e Comparação de Apólices D&O
 
-**Grupo Insurminds · Curso InsurMinds / I2A2**
+**Grupo Jarvis · Curso InsurMinds / I2A2**
 *[Read in English](ROTEIRO_PROJETO_FINAL.md)*
 
 **Prazo: 06/10/2026 às 23h59.**

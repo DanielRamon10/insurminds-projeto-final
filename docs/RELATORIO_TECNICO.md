@@ -2,7 +2,7 @@
 
 **Projeto Final · Curso InsurMinds · Instituto de Inteligência Artificial Aplicada (I2A2)**
 
-**Grupo Insurminds** — Daniel Ramon, Nicole Paes, Paulo Henrique, Paulo Roberto e
+**Grupo Jarvis** — Daniel Ramon, Nicole Paes, Paulo Henrique, Paulo Roberto e
 Juliana Catarina (representante)
 
 Repositório: <https://github.com/DanielRamon10/insurminds-projeto-final>

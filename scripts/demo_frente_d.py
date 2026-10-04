@@ -183,7 +183,7 @@ def comparacao(banco: Banco) -> None:
 def main() -> int:
     print(f"{'=' * LARGURA}")
     print("FRENTE D — INTERFACE, DEMONSTRACAO E APRESENTACAO")
-    print("Plataforma de analise e comparacao de apolices D&O · grupo Insurminds / I2A2")
+    print("Plataforma de analise e comparacao de apolices D&O · grupo Jarvis / I2A2")
     print("=" * LARGURA)
     print("\nEste caminho existe para o video nao depender do navegador (tarefa D.4).")
     print("A interface mostra o mesmo, com selos, cartoes e a pagina do PDF renderizada:")

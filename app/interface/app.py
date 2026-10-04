@@ -311,7 +311,7 @@ def cabecalho(comparacao_em_uso: str | None = None) -> None:
 
 def rodape() -> None:
     st.markdown(
-        '<div class="rodape">Protótipo acadêmico do grupo Insurminds · I2A2. As apólices '
+        '<div class="rodape">Protótipo acadêmico do grupo Jarvis · I2A2. As apólices '
         "são condições gerais públicas, com registro na SUSEP — nenhum dado de cliente "
         "entra nesta plataforma.</div>",
         unsafe_allow_html=True,
@@ -560,7 +560,7 @@ def barra_lateral(
 
     with st.sidebar:
         st.markdown("### 🛡️ Comparador D&O")
-        st.caption("Grupo Insurminds · I2A2 · Projeto Final")
+        st.caption("Grupo Jarvis · I2A2 · Projeto Final")
 
         opcoes = [i["documento"] for i in itens]
         rotulos = {
