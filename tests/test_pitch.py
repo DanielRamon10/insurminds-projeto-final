@@ -98,7 +98,11 @@ def test_a_capa_declara_a_entrega(deck):
     capa = Presentation(str(deck)).slides[0]
     texto = "\n".join(f.text_frame.text for f in capa.shapes if f.has_text_frame)
     assert "06/10/2026" in texto
-    assert "Insurminds" in texto
+    # Jarvis e o grupo; InsurMinds e o curso. A capa traz os dois, e confundi-los
+    # foi exatamente o erro que este teste passou a cobrir. A comparacao ignora a
+    # caixa porque o kicker da capa e escrito em maiusculas.
+    assert "jarvis" in texto.lower()
+    assert "insurminds" in texto.lower()
 
 
 def test_o_deck_declara_a_limitacao_real_da_extracao(deck):

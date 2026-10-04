@@ -134,7 +134,7 @@ def cabecalho(slide, kicker: str, titulo: str) -> None:
 def rodape(slide, numero: int) -> None:
     texto(
         slide, Inches(0.7), Inches(6.95), Inches(9.6), Inches(0.3),
-        "Plataforma de análise e comparação de apólices D&O · grupo Insurminds / I2A2",
+        "Plataforma de análise e comparação de apólices D&O · grupo Jarvis / I2A2",
         tamanho=10, cor=CINZA, espaco=0,
     )
     texto(
@@ -388,7 +388,7 @@ def main() -> int:
 CONTEUDO: list[dict] = [
     {
         "tipo": "capa",
-        "curso": "CURSO INSUMINS · I2A2 — PROJETO FINAL",
+        "curso": "CURSO INSURMINDS · I2A2 — PROJETO FINAL",
         "titulo": "Comparar duas apólices D&O\nsem perder a origem de\nnenhum número",
         "resumo": (
             "A plataforma lê condições gerais em PDF ou imagem, extrai as cláusulas com "
@@ -396,7 +396,7 @@ CONTEUDO: list[dict] = [
             "outra — com a página e o trecho de onde cada valor saiu."
         ),
         "rodape": (
-            "Grupo Insurminds · Daniel Ramon, Paulo Henrique, Nicole Paes, "
+            "Grupo Jarvis · Daniel Ramon, Paulo Henrique, Nicole Paes, "
             "Paulo Roberto e Juliana Catarina\n"
             "Entrega: 06/10/2026 · protótipo acadêmico, sem integração com seguradoras"
         ),
