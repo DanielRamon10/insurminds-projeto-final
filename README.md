@@ -20,6 +20,8 @@ Licensed under the **MIT license** (see [LICENSE](LICENSE)).
 
 ## Team
 
+**Jarvis group** — Final Project of the InsurMinds course.
+
 | Member | Workstream |
 | --- | --- |
 | Daniel Ramon | Ingestion and OCR · Storage and comparison · Documentation |

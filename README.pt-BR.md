@@ -20,6 +20,8 @@ Licenciado sob a **licença MIT** (ver [LICENSE](LICENSE)).
 
 ## Grupo
 
+**Grupo Jarvis** — Projeto Final do curso InsurMinds.
+
 | Integrante | Frente |
 | --- | --- |
 | Daniel Ramon | Ingestão e OCR · Armazenamento e comparação · Documentação |
