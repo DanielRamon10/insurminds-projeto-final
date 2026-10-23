@@ -1267,3 +1267,56 @@ def test_uma_apolice_mostra_o_estado_inicial(tela_de_exemplos):
 
     infos = " | ".join(i.value for i in at.info)
     assert "duas apólices" in infos
+
+
+# ---------------------------------------------------------------------------
+# Primeira carga do banco — o que o aplicativo publicado mostra ao subir
+# ---------------------------------------------------------------------------
+
+
+def test_banco_vazio_recebe_a_extracao_real_e_nao_os_exemplos(tmp_path, monkeypatch):
+    """Na nuvem o `.db` nasce vazio a cada deploy, porque nao entra no
+    repositorio. Semear os exemplos direto faria a tela de uma apresentacao
+    abrir com o selo "extracao de exemplo"."""
+    from app.domain.armazenamento import Banco
+    from app.interface.app import semear_inicial
+
+    banco = Banco(tmp_path / "vazio.db")
+    usado = semear_inicial(banco)
+
+    guardadas = banco.listar()
+    assert guardadas, "o banco deveria ter sido populado"
+    assert "real" in usado
+    assert not any(
+        "sem LLM" in (l["modelo_usado"] or "") for l in guardadas
+    ), "a tela abriria com o selo de exemplo"
+
+
+def test_sem_extracao_real_disponivel_cai_nos_exemplos(tmp_path, monkeypatch):
+    """O plano B continua existindo: quem clonar sem `data/extracoes/` ainda ve
+    a plataforma funcionando, com o selo dizendo que o dado e fabricado."""
+    from app.domain.armazenamento import Banco
+    from app.interface import app as modulo
+
+    monkeypatch.setattr(modulo, "DATA_DIR", tmp_path / "sem_extracoes")
+    banco = Banco(tmp_path / "vazio.db")
+    usado = modulo.semear_inicial(banco)
+
+    assert usado == "extrações de exemplo"
+    assert banco.listar()
+
+
+def test_banco_ja_populado_nao_e_tocado(tmp_path):
+    """Rodando local, quem ja carregou suas apolices nao perde nada no reload."""
+    from app.domain.armazenamento import Banco
+    from app.interface.app import semear_inicial
+    from app.schemas import ApoliceExtraida, CampoExtraido
+
+    banco = Banco(tmp_path / "cheio.db")
+    banco.salvar(ApoliceExtraida(
+        documento="minha.pdf", seguradora="Minha", modelo_usado="gemini",
+        campos=[CampoExtraido(campo_id="franquia", valor="R$ 1,00")],
+    ))
+
+    assert semear_inicial(banco) == "banco já populado"
+    assert [l["documento"] for l in banco.listar()] == ["minha.pdf"]

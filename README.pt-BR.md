@@ -119,6 +119,18 @@ python -m scripts.demo_ingestao caminho/para/outra.pdf
 Mostra quantas páginas cada documento tem, quanto texto rendeu, quantas páginas
 precisaram de OCR e uma amostra do que é entregue ao modelo.
 
+### Publicar na nuvem
+
+O aplicativo roda no [Streamlit Community Cloud](https://share.streamlit.io) sem
+ajuste nenhum: aponte para este repositório e para `app/interface/app.py`.
+
+Duas coisas fazem isso funcionar sem configuração extra. O `packages.txt` instala o
+Tesseract na máquina da nuvem, para o OCR atender o requisito de aceitar imagem. E o
+banco, que não entra no repositório, é populado na primeira carga a partir dos JSON de
+`data/extracoes/` — então a tela abre com a extração real, e não com os exemplos.
+
+Nenhuma chave de API é necessária: a comparação não usa modelo de linguagem.
+
 ### Comparação entre apólices
 
 ```bash

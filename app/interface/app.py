@@ -47,7 +47,7 @@ import pandas as pd  # noqa: E402
 import streamlit as st  # noqa: E402
 
 from app.clients.extracao import ocr_disponivel  # noqa: E402
-from app.config import APOLICES_DIR, EXTENSOES_IMAGEM, EXTENSOES_PDF  # noqa: E402
+from app.config import APOLICES_DIR, DATA_DIR, EXTENSOES_IMAGEM, EXTENSOES_PDF  # noqa: E402
 from app.config import provedores_disponiveis  # noqa: E402
 from app.domain.armazenamento import CAMINHO_PADRAO, Banco  # noqa: E402
 from app.domain.campos import DicionarioCampos, carregar_campos  # noqa: E402
@@ -190,6 +190,44 @@ def caminho_do_documento(documento: str) -> Path | None:
 def documentos_por_apolice(apolices: list[ApoliceExtraida]) -> dict[str, Path | None]:
     """De {nome da apólice} para {arquivo de onde ela saiu}."""
     return {a.nome: caminho_do_documento(a.documento) for a in apolices}
+
+
+def semear_inicial(banco: Banco) -> str:
+    """Popula um banco vazio, preferindo a extração real à de exemplo.
+
+    Importa para o aplicativo publicado: o `.db` não entra no repositório, então
+    cada vez que a nuvem sobe o processo o banco nasce vazio. Semear os exemplos
+    direto faria a tela abrir com o selo *extração de exemplo* — justamente o que
+    uma apresentação não quer mostrar. Os JSON de `data/extracoes/` **entram** no
+    repositório, então a extração de verdade está disponível e sai na frente.
+
+    Devolve, em uma frase, o que foi usado.
+    """
+    if banco.listar():
+        return "banco já populado"
+
+    diretorio = DATA_DIR / "extracoes"
+    reais = (
+        sorted(p for p in diretorio.glob("*.json") if "resposta_llm" not in p.name)
+        if diretorio.is_dir()
+        else []
+    )
+
+    gravadas = 0
+    for caminho in reais:
+        try:
+            banco.salvar(
+                ApoliceExtraida.model_validate_json(caminho.read_text(encoding="utf-8"))
+            )
+            gravadas += 1
+        except Exception:  # noqa: BLE001 — um arquivo ruim não impede os outros
+            continue
+
+    if gravadas:
+        return f"{gravadas} extração(ões) real(is)"
+
+    semear_exemplos(banco)
+    return "extrações de exemplo"
 
 
 def semear_exemplos(banco: Banco, forcar: bool = False) -> tuple[int, int]:
@@ -1148,7 +1186,7 @@ def main() -> None:
 
     banco = banco_do_projeto(str(caminho_do_banco()))
     dic = dicionario_do_especialista()
-    semear_exemplos(banco)
+    semear_inicial(banco)
     itens = banco.listar()
 
     selecionados, incluir_iguais, situacoes = barra_lateral(banco, itens, dic)
