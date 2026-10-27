@@ -660,9 +660,13 @@ def barra_lateral(
         if provedores:
             st.caption("Modelos configurados no `.env`: " + ", ".join(provedores) + ".")
         else:
+            # A redação diz a mesma coisa de outro ângulo, e o ângulo importa: numa
+            # apresentação, "nenhuma chave configurada" se lê como falta, quando é
+            # consequência de uma decisão de arquitetura — a comparação é
+            # determinística justamente para não depender de modelo.
             st.caption(
-                "Nenhuma chave de LLM no `.env`: a extração por modelo não roda nesta "
-                "máquina. A comparação não depende dela."
+                "A comparação é determinística e não consome modelo de linguagem. "
+                "Para extrair uma apólice nova, configure uma chave no `.env`."
             )
 
     return selecionados, incluir_iguais, situacoes
