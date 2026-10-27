@@ -1058,7 +1058,7 @@ def test_a_tela_abre_com_a_comparacao_montada(tela):
     assert _composicao_na_tela(tela), "a barra de composição não foi renderizada"
 
     texto = "\n".join(m.value for m in tela.markdown)
-    assert "Comparador de apólices D&amp;O" in texto
+    assert "Comparador de Condições Gerais D&amp;O" in texto
     assert "Limite Máximo de Indenização (LMI)" in texto
     assert "Por que importa:" in texto
 
@@ -1175,7 +1175,7 @@ def test_o_cabecalho_monta_o_html_com_a_arte_e_o_contexto():
     )
     assert "hero-topo" in sem_escolha
     assert "hero-arte" in sem_escolha
-    assert "Comparador de apólices D&amp;O" in sem_escolha
+    assert "Comparador de Condições Gerais D&amp;O" in sem_escolha
     assert "{" not in sem_escolha.split("<style")[0], "sobrou chave sem substituir"
 
 
