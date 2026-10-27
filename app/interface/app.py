@@ -319,7 +319,7 @@ _MOLDE_DO_CABECALHO = """
 <div class="hero notranslate" translate="no">
   <div class="hero-topo">
     <div class="hero-texto">
-      <h1>Comparador de apólices D&amp;O</h1>
+      <h1>Comparador de Condições Gerais D&amp;O</h1>
       <p>Leitura, extração e comparação de condições gerais de seguro para
       <i>Directors &amp; Officers</i>. {contexto}.</p>
       <div class="linha-selos">
@@ -966,7 +966,7 @@ def aba_apolices(
     documentos: dict[str, Path | None],
 ) -> None:
     """O que está guardado e a porta de entrada de documento novo."""
-    _secao("📄 Apólices em comparação")
+    _secao("📄 Documentos em análise")
     st.caption(
         "Este é o banco de apólices processadas (SQLite, frente C). Reprocessar uma "
         "apólice custa cota de modelo; reler do banco não custa nada — e a "
@@ -1181,7 +1181,7 @@ def _processar(arquivos: list, extrator, banco: Banco) -> None:
 
 def main() -> None:
     st.set_page_config(
-        page_title="Comparador de apólices D&O",
+        page_title="Comparador de Condições Gerais D&O",
         page_icon="🛡️",
         layout="wide",
         initial_sidebar_state="expanded",
